@@ -2,7 +2,8 @@
 
 Your voice-first buddy on top of Claude. Ask about **anything you see or want to know**, like "Alfred, what's this error?", "who's this player?" or "how do I get past this boss?", and he looks at your screen, searches the web if he needs to, and tells you. You never have to leave what you're doing.
 
-- **Trigger:** tap **right Alt** (Windows) / **right Option** (macOS) and just talk. AltGr shortcuts like AltGr+2 for `@` are ignored. Saying "Alfred" works too (optional), and you can say the question in the same breath.
+- **Push-to-talk:** **hold right Alt** (Windows) / **right Option** (macOS) while you talk and let go when you're done. He hears nothing while the key isn't held, so surrounding voices are ignored. (Prefer tap-then-talk? Set `wake.trigger_mode: tap`.)
+- **Tap mode (optional):** tap the key and just talk. AltGr shortcuts like AltGr+2 for `@` are ignored. Saying "Alfred" works too (optional), and you can say the question in the same breath.
 - **Purple edge glow** around every monitor while he's actively listening, so you always know when he's hearing you.
 - **Runs on your Claude subscription** through the Claude Agent SDK, with Haiku by default. Say "think hard" or "research" to switch to Sonnet for that one question.
 - **Locked down by default.** He reads only the folders you allow on that machine. Writes and opening URLs need your approval, terminal commands are off, and secrets files are always blocked.
@@ -58,7 +59,7 @@ Your voice-first buddy on top of Claude. Ask about **anything you see or want to
 - Try: "Alfred, what's this?", "what does this error mean?", "who's the guy on screen?", "is this a good deal?"
 
 ### Triggering and the glow
-- Tap right Alt / right Option → the screen edges glow purple → ask your question → the glow fades when he stops listening.
+- Hold right Alt / right Option → the screen edges glow purple → ask your question → let go. The glow is on exactly while he's hearing you.
 - The glow also comes on while he waits for your yes/no on a permission prompt.
 - To use only the key (no always-on wake word, lowest CPU/GPU), set `wake.backend: none`.
 - To use a different key, change `wake.trigger_key` (`right_ctrl`, `right_cmd`, `f13`).

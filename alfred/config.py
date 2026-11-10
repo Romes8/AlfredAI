@@ -39,6 +39,7 @@ DEFAULTS: dict[str, Any] = {
         "porcupine_keyword_path": "./models/hey_alfred_windows.ppn",
         "porcupine_access_key_env": "PICOVOICE_ACCESS_KEY",
         "trigger_key": "right_alt",
+        "trigger_mode": "hold",
     },
     "audio": {
         "input_device": None,

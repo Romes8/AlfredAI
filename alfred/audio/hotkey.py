@@ -34,9 +34,14 @@ def is_solo_tap(pressed_at: float, released_at: float, other_key_used: bool, max
 
 
 class TriggerKey:
-    def __init__(self, trigger: str, on_trigger: Callable[[], None]) -> None:
+    def __init__(self, trigger: str, on_trigger: Callable[[], None] | None = None,
+                 on_down: Callable[[], None] | None = None, on_up: Callable[[], None] | None = None,
+                 on_cancel: Callable[[], None] | None = None) -> None:
+        """on_trigger: clean tap.  on_down / on_up: key held / released (hold-to-talk).
+        on_cancel: another key was pressed while holding (AltGr typing) - throw the recording away."""
         self.names = key_names(trigger)
         self.on_trigger = on_trigger
+        self.on_down, self.on_up, self.on_cancel = on_down, on_up, on_cancel
         self._down_at: float | None = None
         self._other_used = False
         self._listener = None
@@ -46,23 +51,32 @@ class TriggerKey:
         return getattr(key, "name", None)  # special keys have .name ('alt_r'); characters don't
 
     def _on_press(self, key) -> None:
+        call = None
         with self._lock:
             if self._name(key) in self.names:
                 if self._down_at is None:
                     self._down_at = time.monotonic()
                     self._other_used = False
+                    call = self.on_down
             elif self._down_at is not None and self._name(key) not in ("ctrl_l", "ctrl"):
                 # another key while holding right Alt -> it's an AltGr combo, not a trigger
                 # (Windows sends a fake ctrl_l together with AltGr, so ignore that one)
+                if not self._other_used:
+                    call = self.on_cancel
                 self._other_used = True
+        if call:
+            call()
 
     def _on_release(self, key) -> None:
-        fire = False
+        fire = up = False
         with self._lock:
             if self._name(key) in self.names and self._down_at is not None:
                 fire = is_solo_tap(self._down_at, time.monotonic(), self._other_used)
+                up = not self._other_used
                 self._down_at = None
-        if fire:
+        if up and self.on_up:
+            self.on_up()
+        if fire and self.on_trigger:
             self.on_trigger()
 
     def start(self) -> bool:

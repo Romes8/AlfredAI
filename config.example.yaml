@@ -34,6 +34,10 @@ wake:
   #  1) tap the trigger key - RIGHT ALT on Windows, RIGHT OPTION on macOS (AltGr combos like AltGr+2 are ignored)
   #  2) optionally say his name - pick a wake word backend below, or `none` for key-only
   trigger_key: right_alt      # right_alt (= right Option on Mac) / right_ctrl / right_cmd / f13
+  # hold - push-to-talk: Alfred hears you ONLY while the key is held; mic audio is discarded otherwise.
+  #        Ignores surrounding voices. Wake word backend is ignored. Approve things with a tap.
+  # tap  - tap once, then talk; he stops when you go quiet (picks up nearby voices too)
+  trigger_mode: hold
   # none        - key only, no always-on listening (lightest)
   # whisper     - no setup: listens for speech and checks whether you said "Alfred" (uses the GPU)
   # openwakeword - lighter: needs a custom "hey alfred" .onnx model (see README)

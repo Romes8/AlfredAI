@@ -17,7 +17,9 @@ FRAME_MS = 30  # webrtcvad supports 10/20/30 ms frames
 
 
 class Microphone:
-    def __init__(self, cfg: dict) -> None:
+    def __init__(self, cfg: dict, gated: bool = False) -> None:
+        """gated=True (hold-to-talk): audio is thrown away unless `capturing` is set - Alfred hears nothing
+        while the key isn't held."""
         import sounddevice as sd  # imported lazily so tests run without audio hardware
         import webrtcvad
 
@@ -28,7 +30,9 @@ class Microphone:
         self.max_frames = int(a["max_utterance_s"] * 1000 / FRAME_MS)
         self.vad = webrtcvad.Vad(int(a["vad_aggressiveness"]))
         self.muted = threading.Event()
-        self.interrupt = threading.Event()  # set by the trigger key to abort a recording in progress
+        self.interrupt = threading.Event()
+        self.gated = gated
+        self.capturing = threading.Event()  # set by the trigger key to abort a recording in progress
         self._frames: queue.Queue[bytes] = queue.Queue(maxsize=2000)
         self._stream = sd.RawInputStream(
             samplerate=self.sr,
@@ -41,7 +45,7 @@ class Microphone:
 
     # sounddevice callback - runs on the audio thread
     def _on_audio(self, indata, frames, time_info, status) -> None:  # noqa: ARG002
-        if self.muted.is_set():
+        if self.muted.is_set() or (self.gated and not self.capturing.is_set()):
             return
         try:
             self._frames.put_nowait(bytes(indata))
@@ -69,6 +73,25 @@ class Microphone:
                 yield self._frames.get(timeout=timeout)
             except queue.Empty:
                 yield b""
+
+    def record_held(self, released: threading.Event, max_s: float = 60.0) -> np.ndarray | None:
+        """Collect audio from key-down until `released` is set (hold-to-talk). None if too short."""
+        chunks: list[bytes] = []
+        t0 = time.monotonic()
+        while not released.is_set() and time.monotonic() - t0 < max_s:
+            try:
+                chunks.append(self._frames.get(timeout=0.05))
+            except queue.Empty:
+                pass
+        time.sleep(0.15)  # grab the tail of the last word
+        self.capturing.clear()
+        while True:
+            try:
+                chunks.append(self._frames.get_nowait())
+            except queue.Empty:
+                break
+        pcm = np.frombuffer(b"".join(chunks), dtype=np.int16).astype(np.float32) / 32768.0
+        return pcm if len(pcm) > self.sr * 0.3 else None
 
     def record_utterance(self, start_timeout_s: float | None = None) -> np.ndarray | None:
         """Block until one phrase has been spoken, return it as float32 [-1, 1].

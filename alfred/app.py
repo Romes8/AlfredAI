@@ -64,7 +64,8 @@ async def run_voice(cfg: dict, bus: EventBus) -> None:
 
     name = cfg["name"]
     print(f"[{name}] loading speech models...")
-    mic = Microphone(cfg)
+    hold = cfg["wake"].get("trigger_mode", "hold") == "hold"
+    mic = Microphone(cfg, gated=hold)  # hold-to-talk: mic audio is dropped unless the key is held
     stt = Transcriber(cfg)
     speaker = Speaker(cfg, mic)
     wake = WakeListener(cfg, mic, stt)
@@ -85,6 +86,24 @@ async def run_voice(cfg: dict, bus: EventBus) -> None:
 
     mode = cfg["permissions"].get("approval", "key")  # key | voice | both
     key_name = "right Option" if sys.platform == "darwin" else "right Alt"
+
+    async def ask_hold(summary: str, detail: str) -> bool:  # noqa: ARG001
+        """Hold-to-talk approval: a press of the key = yes. Doing nothing = no. The mic stays off."""
+        bus.state("waiting_tap")
+        wake.hotkey_pressed.clear()
+        await say(f"{summary} Tap {key_name} to approve, or just leave it.")
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + timeout
+        while loop.time() < deadline:
+            if wake.hotkey_pressed.is_set():
+                await asyncio.sleep(0.4)  # let the tap finish
+                wake.hotkey_pressed.clear()
+                wake.reset_hold()  # that press was a "yes", not the start of a new question
+                await say("Sorted.")
+                return True
+            await asyncio.sleep(0.05)
+        await say("Leaving it then.")
+        return False
 
     async def ask(summary: str, detail: str) -> bool:
         """Approval. key: tap the trigger key = yes (a voice can't approve - a video or someone else in the room
@@ -124,14 +143,16 @@ async def run_voice(cfg: dict, bus: EventBus) -> None:
         await say("I'll take that as a no.")
         return False
 
-    gate = PermissionGate(PermissionPolicy(cfg), ask, bus)
+    gate = PermissionGate(PermissionPolicy(cfg), ask_hold if hold else ask, bus)
     server, names = build_server(cfg)
     brain = Brain(cfg, gate, server, names, bus)
     await brain.start()
 
-    key = key_name
     backend = cfg["wake"]["backend"]
-    hint = f"tap {key}" + ("" if backend == "none" else f" or say \"{name}\"")
+    if hold:
+        hint = f"hold {key_name} while you talk"
+    else:
+        hint = f"tap {key_name}" + ("" if backend == "none" else f" or say \"{name}\"")
     print(f"[{name}] online - {hint}. The screen edge glows purple while I'm listening.")
     await say(f"{name}'s online. What's good?")
 
@@ -144,7 +165,12 @@ async def run_voice(cfg: dict, bus: EventBus) -> None:
             bus.state("idle")
             woke = await asyncio.to_thread(wake.wait)
             command = woke.command
-            if not command:
+            if woke.held:
+                bus.state("listening")  # purple glow for exactly as long as the key is held
+                audio = await asyncio.to_thread(wake.record_hold)
+                bus.state("idle")
+                command = (await asyncio.to_thread(stt.transcribe, audio)).strip() if audio is not None else ""
+            elif not command:
                 command = await listen(6)  # purple edge glow = listening, no need to talk
             if not command:
                 continue

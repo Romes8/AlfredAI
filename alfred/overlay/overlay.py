@@ -21,6 +21,7 @@ STATE_STYLE = {
     "thinking": ("#3b82f6", "Thinking..."),
     "speaking": ("#a855f7", "Talking"),
     "waiting_confirm": ("#f59e0b", "Waiting for your yes / no"),
+    "waiting_tap": ("#f59e0b", "Tap the key to approve"),
 }
 
 

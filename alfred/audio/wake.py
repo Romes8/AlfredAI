@@ -21,6 +21,7 @@ import numpy as np
 @dataclass
 class WakeResult:
     command: str = ""  # text spoken after the wake word (whisper backend), may be empty
+    held: bool = False  # hold-to-talk: record until the key is released
 
 
 def find_wake(text: str, words: list[str]) -> WakeResult | None:
@@ -48,7 +49,13 @@ class WakeListener:
         w = cfg["wake"]
         self.backend = w["backend"]
         self.words = w["words"]
-        self.hotkey_pressed = threading.Event()
+        self.hotkey_pressed = threading.Event()  # any press of the key (also used to approve permissions)
+        self.hold = w.get("trigger_mode", "hold") == "hold"
+        if self.hold:
+            self.backend = "none"  # hold-to-talk = only the key, never ambient listening
+        self.key_down = threading.Event()
+        self.key_up = threading.Event()
+        self.cancelled = False
         self._setup_trigger_key(w.get("trigger_key"))
         self._oww = None
         self._porcupine = None
@@ -69,15 +76,47 @@ class WakeListener:
             return
         from alfred.audio.hotkey import TriggerKey
 
-        def fire() -> None:
-            self.hotkey_pressed.set()
-            self.mic.interrupt.set()  # cut off whatever the wake-word listener was recording
+        if self.hold:
+            def down() -> None:
+                self.cancelled = False
+                self.key_up.clear()
+                self.mic.capturing.set()  # start hearing NOW
+                self.hotkey_pressed.set()
+                self.key_down.set()
 
-        self._trigger = TriggerKey(trigger, fire)
+            def up() -> None:
+                self.key_up.set()
+
+            def cancel() -> None:  # AltGr typing, not talking
+                self.cancelled = True
+                self.key_up.set()
+
+            self._trigger = TriggerKey(trigger, on_down=down, on_up=up, on_cancel=cancel)
+        else:
+            def fire() -> None:
+                self.hotkey_pressed.set()
+                self.mic.interrupt.set()  # cut off whatever the wake-word listener was recording
+
+            self._trigger = TriggerKey(trigger, on_trigger=fire)
         self._trigger.start()
+
+    def record_hold(self):
+        """Hold-to-talk: audio from key-down to key-up (None if cancelled or too short)."""
+        audio = self.mic.record_held(self.key_up)
+        return None if self.cancelled else audio
+
+    def reset_hold(self) -> None:
+        """Forget a press that wasn't meant as talking (e.g. a tap used to approve something)."""
+        self.key_down.clear()
+        self.mic.capturing.clear()
+        self.mic.flush()
 
     def wait(self) -> WakeResult:
         """Block until Alfred is summoned."""
+        if self.hold:
+            self.key_down.wait()
+            self.key_down.clear()
+            return WakeResult(held=True)
         if self.backend == "whisper":
             return self._wait_whisper()
         if self.backend == "none":
