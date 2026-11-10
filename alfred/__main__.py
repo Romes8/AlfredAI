@@ -7,6 +7,7 @@
   alfred run        run in this terminal (foreground, Ctrl+C to stop)
   alfred text       type instead of talk (foreground)
   alfred connectors which outside services (HubSpot, email, ...) Alfred can use on this machine
+  alfred say "hi"   hear a sentence in Alfred's voice (try voices: --voice am_michael, --rate 1.2)
 
 `python -m alfred` with no command = `alfred run` (same as before). Old `--text` still works.
 """
@@ -23,7 +24,7 @@ import traceback
 from alfred.config import load_config
 from alfred.events import EventBus
 
-COMMANDS = ("wakeup", "sleep", "status", "logs", "run", "text", "connectors")
+COMMANDS = ("wakeup", "sleep", "status", "logs", "run", "text", "connectors", "say")
 
 
 def _find_config(explicit: str | None) -> str | None:
@@ -81,11 +82,25 @@ def main(argv: list[str] | None = None) -> None:
     faulthandler.enable()  # print a Python traceback if a native library crashes
     parser = argparse.ArgumentParser(prog="alfred", description="Alfred - your voice buddy on Claude")
     parser.add_argument("command", nargs="?", default="run", choices=COMMANDS)
+    parser.add_argument("words", nargs="*", help="text for `alfred say`")
+    parser.add_argument("--voice", default=None, help="voice for `alfred say`, e.g. bm_george, am_michael")
+    parser.add_argument("--rate", type=float, default=None, help="speed for `alfred say`, e.g. 1.2")
     parser.add_argument("--text", action="store_true", help="(old style) same as `alfred text`")
     parser.add_argument("--no-overlay", action="store_true")
     parser.add_argument("--config", default=None, help="defaults to $ALFRED_CONFIG or config.yaml")
     args = parser.parse_args(argv)
 
+    if args.command == "say":
+        from alfred.audio.tts import Speaker
+
+        cfg = load_config(_find_config(args.config))
+        if args.voice:
+            cfg["tts"]["voice"] = args.voice
+        if args.rate:
+            cfg["tts"]["rate"] = args.rate
+        text = " ".join(args.words) or "Yo, it's Alfred. What are we getting into today?"
+        Speaker(cfg).say(text)
+        return
     if args.command == "connectors":
         from alfred.connectors import describe_all
 

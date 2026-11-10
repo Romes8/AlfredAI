@@ -28,6 +28,7 @@ WEB_TOOLS = {"WebSearch"}
 FETCH_TOOLS = {"WebFetch"}
 ALFRED_PREFIX = "mcp__alfred__"
 OPEN_URL = "mcp__alfred__open_url"
+OPEN_APP = "mcp__alfred__open_app"
 
 DESTRUCTIVE = [
     r"\brm\s+-[a-z]*r", r"\brmdir\b", r"\bdel\s+/[sq]", r"\bformat\s+[a-z]:", r"\bmkfs\b",
@@ -52,6 +53,7 @@ class PermissionPolicy:
         self.workspace = expand(cfg["agent"]["workspace"])
         self.deny_patterns = [s.lower() for s in p["deny_patterns"]]
         self.auto_open_links = bool(cfg.get("links", {}).get("auto_open", False))
+        self.auto_open_apps = bool(cfg.get("apps", {}).get("auto_open", True))
         self.connectors = {c.prefix: c for c in conn_mod.load_connectors(cfg)}
 
     # ---------- path helpers ----------
@@ -93,6 +95,9 @@ class PermissionPolicy:
                 return Decision("deny", f"Not a web link: {url[:80]}")
             # Opening a URL can carry data out in the link itself, so it asks unless links.auto_open is on.
             return Decision("allow" if self.auto_open_links else "ask")
+        if tool == OPEN_APP:
+            # Only installed apps by name, no arguments - low risk, so no tap needed unless apps.auto_open is off.
+            return Decision("allow" if self.auto_open_apps else "ask")
         if tool.startswith(ALFRED_PREFIX):
             return Decision("allow")
         if tool.startswith("mcp__"):
@@ -154,6 +159,8 @@ def summarize(tool: str, args: dict[str, Any]) -> tuple[str, str]:
         cmd = str(args.get("command", ""))
         spoken = cmd if len(cmd) <= 120 else cmd[:120] + " and more, check the overlay"
         return f"I want to run this command: {spoken}.", f"RUN\n\n{cmd}"
+    if tool == OPEN_APP:
+        return f"Want me to open {args.get('name', 'that app')}?", f"OPEN APP\n\n{args.get('name')}"
     if tool == OPEN_URL:
         url = str(args.get("url", ""))
         host = re.sub(r"^https?://", "", url).split("/")[0]

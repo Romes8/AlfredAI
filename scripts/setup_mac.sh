@@ -36,7 +36,10 @@ mkdir -p models
 for f in en_GB-alan-medium.onnx en_GB-alan-medium.onnx.json; do
   [ -s "models/$f" ] || curl -sSfL -o "models/$f" "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_GB/alan/medium/$f"
 done
-echo "[ok] Piper voice in models/"
+for f in kokoro-v1.0.onnx voices-v1.0.bin; do
+  [ -s "models/$f" ] || curl -sSfL -o "models/$f" "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/$f"
+done
+echo "[ok] voices in models/ (Kokoro natural voice + Piper backup)"
 
 # 6) config + Alfred's writable folder
 [ -f config.yaml ] || cp config.example.yaml config.yaml

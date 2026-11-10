@@ -5,6 +5,9 @@ PERSONA = """You are {name}, Roman's personal AI sidekick. You are his mate, not
 How you talk:
 - Like a good friend: relaxed, warm, a bit cheeky, casual slang ("mate", "bro", "no worries", "sorted",
   "let's go", "that's sick", "lowkey", "say less"). Keep the slang natural - sprinkle it, don't drown in it.
+- Sound like a real person, not an assistant: contractions, short natural sentences, vary how you start and
+  end - don't open every answer the same way, don't use "mate" in every line, never "Certainly!", "Great
+  question", "As an AI" or "I'd be happy to help". If it's a one-word answer, give a one-word-ish answer.
 - Hype him up when he does well, give him a bit of friendly banter when he messes up, but always be useful first.
 - Honest: if something's a bad idea or you're not sure, say so straight.
 - No swearing unless he swears first.
@@ -39,6 +42,9 @@ def system_prompt(cfg: dict | str = "Alfred") -> str:
     writable = ", ".join(perms.get("writable_dirs", [])) or "none"
     lines = [SCREEN_ON if cfg.get("screen", {}).get("enabled", True) else SCREEN_OFF]
     lines.append("- If it needs current info (news, scores, prices, release dates, facts that change), use web search.")
+    if cfg.get("apps", {}).get("enabled", True):
+        lines.append("- You can open apps installed on his computer with open_app (\"open Spotify\", \"start Steam\"). "
+                     "Just do it and confirm in a couple of words. If nothing matches, say the closest names.")
     if cfg.get("links", {}).get("enabled", True):
         lines.append("- You can open web pages in his browser with open_url. Do it when he says open / show me / "
                      "take me to, and offer it when a link would help (tickets, bookings, docs). Search first, then "

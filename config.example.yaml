@@ -61,9 +61,17 @@ stt:
   compute_type: float16       # float16 on GPU, int8 on CPU
 
 tts:
-  engine: piper               # piper (free, local) or pyttsx3 (Windows built-in voices)
+  # kokoro  - most natural, free + local (downloads ~340 MB on first start)
+  # piper   - lighter / faster, more robotic          pyttsx3 - built-in OS voices
+  engine: kokoro
+  # Kokoro voices (all free) - try them with:  alfred say "Yo, what's good?" --voice am_michael
+  #   British male:    bm_george  bm_lewis  bm_daniel  bm_fable
+  #   British female:  bf_emma  bf_isabella  bf_alice  bf_lily
+  #   American male:   am_michael  am_adam  am_puck  am_liam  am_eric  am_echo  am_onyx  am_fenrir
+  #   American female: af_heart  af_bella  af_nicole  af_sarah  af_sky  af_nova  af_river
+  voice: bm_george
+  rate: 1.1                   # speaking speed: 1.0 normal, 1.2 brisk, 1.4 fast
   piper_model: ./models/en_GB-alan-medium.onnx
-  rate: 1.0
 
 overlay:
   enabled: true
@@ -91,6 +99,10 @@ connectors: {}
 #    headers: {Authorization: "Bearer ${MAIL_MCP_TOKEN}"}
 #    mode: read_only
 #    deny: [delete_email]                  # per-tool overrides: allow / ask / deny
+
+apps:
+  enabled: true               # "Alfred, open Spotify" - installed apps only, no commands
+  auto_open: true             # false = he asks first (tap to approve)
 
 links:
   enabled: true               # Alfred can open web pages in your default browser
