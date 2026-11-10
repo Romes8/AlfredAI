@@ -76,12 +76,23 @@ async def run_voice(cfg: dict, bus: EventBus) -> None:
         bus.state("speaking")
         await asyncio.to_thread(speaker.say, text)
 
+    async def transcribe(audio) -> str:
+        """Speech to text that never takes Alfred down - an error just means "didn't catch that"."""
+        if audio is None:
+            return ""
+        try:
+            return await transcribe(audio)
+        except Exception as e:  # noqa: BLE001
+            print(f"[{name}] speech-to-text error: {e}", flush=True)
+            bus.emit("error", text=f"speech-to-text: {e}")
+            return ""
+
     async def listen(timeout_s: float) -> str:
         bus.state("listening")
         audio = await asyncio.to_thread(mic.record_utterance, timeout_s)
         if audio is None:
             return ""
-        return (await asyncio.to_thread(stt.transcribe, audio)).strip()
+        return await transcribe(audio)
 
     timeout = cfg["permissions"]["confirm_timeout_s"]
 
@@ -202,7 +213,7 @@ async def run_voice(cfg: dict, bus: EventBus) -> None:
                 bus.state("listening")  # purple glow for exactly as long as the key is held
                 audio = await asyncio.to_thread(wake.record_hold)
                 bus.state("idle")
-                command = (await asyncio.to_thread(stt.transcribe, audio)).strip() if audio is not None else ""
+                command = await transcribe(audio)
             elif not command:
                 command = await listen(6)  # purple edge glow = listening, no need to talk
             if not command:
