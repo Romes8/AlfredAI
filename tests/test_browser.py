@@ -60,19 +60,32 @@ def test_summaries_and_url_list():
     assert url_list({"url": "https://a", "urls": ["https://a", "https://b"]}) == ["https://a", "https://b"]
 
 
-def test_chrome_new_window_command(monkeypatch):
+def test_links_go_to_alfreds_own_window(monkeypatch, tmp_path):
     monkeypatch.setattr(browser.sys, "platform", "win32")
-    assert browser.chrome_command("C:/chrome.exe", ["https://a", "https://b"]) == \
-        ["C:/chrome.exe", "--new-window", "https://a", "https://b"]
+    prof = tmp_path / "chrome-links"
+    cmd = browser.chrome_command("C:/chrome.exe", ["https://a", "https://b"], prof)
+    # same profile folder every time -> Chrome hands new links to the already-open Alfred window as tabs
+    assert cmd[0] == "C:/chrome.exe" and f"--user-data-dir={prof}" in cmd and "--new-window" not in cmd
+    assert cmd[-2:] == ["https://a", "https://b"]
     monkeypatch.setattr(browser.sys, "platform", "darwin")
-    assert browser.chrome_command("/Applications/Google Chrome.app", ["https://a"])[:4] == \
-        ["open", "-na", "/Applications/Google Chrome.app", "--args"]
+    mac = browser.chrome_command("/Applications/Google Chrome.app", ["https://a"], prof)
+    assert mac[:4] == ["open", "-na", "/Applications/Google Chrome.app", "--args"] and f"--user-data-dir={prof}" in mac
 
 
-def test_falls_back_to_default_browser(monkeypatch):
+def test_window_new_mode_uses_normal_profile(monkeypatch):
+    launched = []
+    monkeypatch.setattr(browser, "find_chrome", lambda: "C:/chrome.exe")
+    monkeypatch.setattr(browser.subprocess, "Popen", lambda cmd, **kw: launched.append(cmd))
+    monkeypatch.setattr(browser.sys, "platform", "win32")
+    browser.open_in_alfred_window(["https://a"], window="new")
+    assert "--new-window" in launched[-1] and not any(a.startswith("--user-data-dir") for a in launched[-1])
+    browser.open_in_alfred_window(["https://a"])
+    assert any(a.startswith("--user-data-dir") for a in launched[-1])
+
+
+def test_falls_back_to_default_browser_tabs(monkeypatch):
     opened = []
     monkeypatch.setattr(browser, "find_chrome", lambda: None)
-    monkeypatch.setattr(browser.webbrowser, "open_new", lambda u: opened.append(("new", u)))
-    monkeypatch.setattr(browser.webbrowser, "open_new_tab", lambda u: opened.append(("tab", u)))
-    assert browser.open_in_new_window(["https://a", "https://b"]) == "your default browser"
-    assert opened == [("new", "https://a"), ("tab", "https://b")]
+    monkeypatch.setattr(browser.webbrowser, "open_new_tab", lambda u: opened.append(u))
+    assert browser.open_in_alfred_window(["https://a", "https://b"]) == "your default browser"
+    assert opened == ["https://a", "https://b"]
