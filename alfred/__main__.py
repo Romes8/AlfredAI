@@ -2,6 +2,7 @@
 
   alfred wakeup     start Alfred in the background (voice + overlay) - terminal stays free
   alfred sleep      stop him
+  alfred toggle     wake him if he's asleep, put him to sleep if he's awake (what the desktop shortcut runs)
   alfred status     is he running?
   alfred logs       last lines of his log
   alfred run        run in this terminal (foreground, Ctrl+C to stop)
@@ -25,7 +26,7 @@ import traceback
 from alfred.config import load_config
 from alfred.events import EventBus
 
-COMMANDS = ("wakeup", "sleep", "status", "logs", "run", "text", "connectors", "say", "memory")
+COMMANDS = ("wakeup", "sleep", "toggle", "status", "logs", "run", "text", "connectors", "say", "memory")
 
 
 def _find_config(explicit: str | None) -> str | None:
@@ -131,6 +132,10 @@ def main(argv: list[str] | None = None) -> None:
 
         print(describe_all(load_config(_find_config(args.config))))
         return
+    if args.command == "toggle":
+        from alfred import daemon
+
+        sys.exit(daemon.toggle(["--config", args.config] if args.config else []))
     if args.command in ("wakeup", "sleep", "status", "logs"):
         from alfred import daemon
 

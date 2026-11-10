@@ -50,6 +50,7 @@ macOS: `bash scripts/setup_mac.sh` does it all (see the guide for the permission
 | Command | |
 |---|---|
 | `alfred wakeup` | start in the background |
+| `alfred toggle` | on/off: what the Desktop shortcut and Ctrl+Alt+A run (`scripts\install_shortcuts.ps1`) |
 | `alfred sleep` | stop |
 | `alfred status` / `alfred logs` | running? / last log lines |
 | `alfred run` / `alfred text` | foreground voice / typed chat |

@@ -106,6 +106,33 @@ def sleep() -> int:
     return 0
 
 
+def toggle(extra_args: list[str]) -> int:
+    """One-click shortcut: asleep -> wake him up, awake -> put him to sleep."""
+    if running_pid():
+        sleep()
+        _notify("Alfred's asleep", "Click the Alfred shortcut again to wake him up.")
+        return 0
+    code = wakeup(extra_args)
+    if code != 0:
+        _notify("Alfred couldn't start", f"Run `alfred logs` or open {LOG_FILE}")
+    return code
+
+
+def _notify(title: str, text: str) -> None:
+    """Small Windows balloon so a click on the shortcut always gives feedback (no console window)."""
+    if sys.platform != "win32":
+        return
+    title, text = title.replace("'", "''"), text.replace("'", "''")  # PowerShell single-quote escaping
+    ps = ("Add-Type -AssemblyName System.Windows.Forms; $n = New-Object System.Windows.Forms.NotifyIcon; "
+          "$n.Icon = [System.Drawing.SystemIcons]::Information; $n.Visible = $true; "
+          f"$n.ShowBalloonTip(4000, '{title}', '{text}', 'Info'); Start-Sleep -Seconds 5; $n.Dispose()")
+    try:
+        subprocess.Popen(["powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command", ps],
+                         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    except Exception:
+        pass
+
+
 def status() -> int:
     pid = running_pid()
     if pid:
