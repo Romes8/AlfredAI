@@ -9,7 +9,7 @@ Your voice-first buddy on top of Claude. Ask about **anything you see or want to
 - **Connectors:** plug in HubSpot, email, calendar and other services through MCP servers, set up per machine. He reads automatically, and any change needs your tap. See [docs/INSTALL.md](docs/INSTALL.md#9-connectors-optional-hubspot-email-calendar-).
 - **Opens apps:** "Alfred, open Spotify" works with installed apps only, never commands.
 - **Natural free voice:** Kokoro (local, open source). Try voices with `alfred say "hi" --voice am_michael`.
-- **Opens websites:** "Alfred, open the Colosseum ticket page" opens it in your default browser. He asks first (tap to approve) unless you set `links.auto_open: true`.
+- **Shows you what he found:** when the page is worth seeing, he opens it in a new Chrome window. Pages from his own search open straight away; other links ask first.
 - **Purple edge glow** around every monitor while he's actively listening, so you always know when he's hearing you.
 - **Runs on your Claude subscription** through the Claude Agent SDK, with Haiku by default. Say "think hard" or "research" to switch to Sonnet for that one question.
 - **Locked down by default.** He reads only the folders you allow on that machine. Writes and opening URLs need your approval, terminal commands are off, and secrets files are always blocked.

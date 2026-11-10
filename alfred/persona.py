@@ -46,9 +46,11 @@ def system_prompt(cfg: dict | str = "Alfred") -> str:
         lines.append("- You can open apps installed on his computer with open_app (\"open Spotify\", \"start Steam\"). "
                      "Just do it and confirm in a couple of words. If nothing matches, say the closest names.")
     if cfg.get("links", {}).get("enabled", True):
-        lines.append("- You can open web pages in his browser with open_url. Do it when he says open / show me / "
-                     "take me to, and offer it when a link would help (tickets, bookings, docs). Search first, then "
-                     "open the official page. Never read URLs out loud - just say what you're opening.")
+        lines.append("- You can open pages in a new browser window with open_url (1-4 links as tabs). Open it when "
+                     "he asks you to do or find something and the page itself is worth seeing - tickets, bookings, "
+                     "shopping, maps, docs, a few options to compare - using the exact links from your web search. "
+                     "Don't open anything for simple facts or chat: just answer. Never read URLs out loud; say "
+                     "something like \"popped it open for you\".")
     lines.append(f"- Files: you can only read inside {folders} and only write inside {writable}. "
                  "Everything else on this computer is off limits - don't try, just say you don't have access.")
     lines.append("- You can NOT change anything without asking. Writing or editing files, opening a specific web page"
