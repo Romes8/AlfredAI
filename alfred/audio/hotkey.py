@@ -1,12 +1,14 @@
 """Global trigger key: tap RIGHT ALT (Windows / Linux) or RIGHT OPTION (macOS) to make Alfred listen.
 
-Uses pynput, which works on Windows and macOS.
+Windows/Linux use pynput. macOS uses a tiny native Quartz event tap instead, because pynput's keyboard
+listener crashes the process ("zsh: trace trap") on recent macOS when it runs off the main thread.
 - macOS: give your terminal / Python "Input Monitoring" (and "Accessibility") permission in
   System Settings > Privacy & Security, otherwise key presses are invisible to Alfred.
 - Windows with a Danish/German/... layout: right Alt is AltGr. That's handled too.
 """
 from __future__ import annotations
 
+import sys
 import threading
 import time
 from typing import Callable
@@ -64,6 +66,8 @@ class TriggerKey:
             self.on_trigger()
 
     def start(self) -> bool:
+        if sys.platform == "darwin":
+            return self._start_macos()
         try:
             from pynput import keyboard
         except Exception as e:  # no display / not installed
@@ -77,3 +81,65 @@ class TriggerKey:
     def stop(self) -> None:
         if self._listener:
             self._listener.stop()
+
+    # ------------------------------------------------------------------ macOS
+    def _start_macos(self) -> bool:
+        try:
+            import Quartz  # pyobjc-framework-Quartz (installed with pynput on macOS)
+        except Exception as e:
+            print(f"[hotkey] trigger key unavailable (pyobjc Quartz missing): {e}")
+            return False
+        t = threading.Thread(target=self._run_macos_tap, args=(Quartz,), daemon=True, name="trigger-key")
+        t.start()
+        return True
+
+    def _run_macos_tap(self, Q) -> None:  # noqa: N803
+        def callback(proxy, etype, event, refcon):  # noqa: ARG001
+            try:
+                if etype in (Q.kCGEventTapDisabledByTimeout, Q.kCGEventTapDisabledByUserInput):
+                    Q.CGEventTapEnable(tap, True)
+                    return event
+                keycode = Q.CGEventGetIntegerValueField(event, Q.kCGKeyboardEventKeycode)
+                if etype == Q.kCGEventFlagsChanged:
+                    name = MAC_MODIFIER_KEYCODES.get(keycode)
+                    if name is None:
+                        if self._down_at is not None:
+                            self._on_press(_Key("other_mod"))
+                        return event
+                    down = bool(Q.CGEventGetFlags(event) & MAC_DEVICE_FLAG[name])
+                    (self._on_press if down else self._on_release)(_Key(name))
+                elif etype == Q.kCGEventKeyDown:
+                    self._on_press(_Key(MAC_PLAIN_KEYCODES.get(keycode)))
+                elif etype == Q.kCGEventKeyUp:
+                    name = MAC_PLAIN_KEYCODES.get(keycode)
+                    if name:
+                        self._on_release(_Key(name))
+            except Exception as e:  # never let an exception escape into Quartz
+                print(f"[hotkey] {e}")
+            return event
+
+        mask = (Q.CGEventMaskBit(Q.kCGEventFlagsChanged) | Q.CGEventMaskBit(Q.kCGEventKeyDown)
+                | Q.CGEventMaskBit(Q.kCGEventKeyUp))
+        tap = Q.CGEventTapCreate(Q.kCGSessionEventTap, Q.kCGHeadInsertEventTap, Q.kCGEventTapOptionListenOnly,
+                                 mask, callback, None)
+        if tap is None:
+            print("[hotkey] macOS blocked the key listener. Allow your terminal in System Settings > "
+                  "Privacy & Security > Input Monitoring (and Accessibility), then restart it.")
+            return
+        source = Q.CFMachPortCreateRunLoopSource(None, tap, 0)
+        Q.CFRunLoopAddSource(Q.CFRunLoopGetCurrent(), source, Q.kCFRunLoopCommonModes)
+        Q.CGEventTapEnable(tap, True)
+        Q.CFRunLoopRun()
+
+
+class _Key:
+    def __init__(self, name: str | None) -> None:
+        self.name = name
+
+
+# macOS virtual keycodes for modifier keys and the device-specific flag bit that says "this one is down"
+MAC_MODIFIER_KEYCODES = {61: "alt_r", 58: "alt_l", 62: "ctrl_r", 59: "ctrl_l", 54: "cmd_r", 55: "cmd_l",
+                         60: "shift_r", 56: "shift_l"}
+MAC_DEVICE_FLAG = {"alt_r": 0x40, "alt_l": 0x20, "ctrl_r": 0x2000, "ctrl_l": 0x01, "cmd_r": 0x10,
+                   "cmd_l": 0x08, "shift_r": 0x04, "shift_l": 0x02}
+MAC_PLAIN_KEYCODES = {105: "f13"}

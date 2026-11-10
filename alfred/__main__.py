@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import faulthandler
 import sys
 import threading
 
@@ -13,6 +14,7 @@ from alfred.events import EventBus
 
 
 def main() -> None:
+    faulthandler.enable()  # print a Python traceback if a native library crashes
     parser = argparse.ArgumentParser(prog="alfred")
     parser.add_argument("--text", action="store_true", help="type instead of talk")
     parser.add_argument("--no-overlay", action="store_true")

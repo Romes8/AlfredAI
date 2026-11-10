@@ -29,3 +29,11 @@ def test_trigger_key_sequence():
     assert fired == [1]
     t._on_press(K("alt_gr")); t._on_release(K("alt_gr"))
     assert fired == [1, 1]
+
+
+def test_macos_modifier_tables_cover_triggers():
+    from alfred.audio.hotkey import MAC_DEVICE_FLAG, MAC_MODIFIER_KEYCODES
+
+    assert MAC_MODIFIER_KEYCODES[61] == "alt_r"  # right Option
+    for name in MAC_MODIFIER_KEYCODES.values():
+        assert name in MAC_DEVICE_FLAG
