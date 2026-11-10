@@ -104,6 +104,21 @@ alfred text      # type instead of talk
 - When he asks permission (write a file, open a page), **tap right Alt** to approve. If you do nothing, the answer is no.
 - Games: use **borderless windowed** mode, because exclusive fullscreen hides the overlay.
 
+### Voice, speed and apps
+- **Voice:** Kokoro is the default. It's free, runs on your PC and sounds natural (open-source, Apache 2.0).
+  Try voices before picking one:
+  ```
+  alfred say "Yo, what are we getting into today?" --voice am_michael
+  alfred say "Right then, what's the plan?" --voice bm_george --rate 1.2
+  ```
+  Then set `tts.voice` (and `tts.rate`) in `config.yaml`. Voices: British male `bm_george bm_lewis bm_daniel bm_fable`,
+  British female `bf_emma bf_isabella bf_alice bf_lily`, American male `am_michael am_adam am_puck am_liam am_eric
+  am_echo am_onyx am_fenrir`, American female `af_heart af_bella af_nicole af_sarah af_sky af_nova af_river`.
+  `engine: piper` is lighter but more robotic. `engine: pyttsx3` uses the built-in Windows voices.
+- **Speed:** `tts.rate`. 1.0 is normal, 1.1 is the default, 1.2–1.3 is brisk.
+- **Apps:** "Alfred, open Spotify / Steam / VS Code". Only installed apps (from the Start menu) can be opened,
+  never arbitrary commands. Set `apps.auto_open: false` to make him ask first, or `apps.enabled: false` to turn it off.
+
 ### 9. Connectors (optional): HubSpot, email, calendar, ...
 Alfred can use outside services through **MCP servers**, set up per machine in `config.yaml` under `connectors:`.
 Your claude.ai connectors are **not** picked up automatically; Alfred only uses what's listed here.

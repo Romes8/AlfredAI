@@ -61,7 +61,11 @@ $v = "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_GB/alan/med
 foreach ($f in @("en_GB-alan-medium.onnx", "en_GB-alan-medium.onnx.json")) {
     if (-not (Test-Path "models\$f")) { Invoke-WebRequest "$v/$f" -OutFile "models\$f" -UseBasicParsing }
 }
-Write-Host "[ok] voice downloaded"
+$k = "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0"
+foreach ($f in @("kokoro-v1.0.onnx", "voices-v1.0.bin")) {
+    if (-not (Test-Path "models\$f")) { Write-Host "  downloading $f ..."; Invoke-WebRequest "$k/$f" -OutFile "models\$f" -UseBasicParsing }
+}
+Write-Host "[ok] voices downloaded (Kokoro natural voice + Piper backup)"
 
 # 6) Config for THIS PC (only created if missing - your edits are never overwritten)
 $alfredDir = Join-Path $env:USERPROFILE "Documents\Alfred"
