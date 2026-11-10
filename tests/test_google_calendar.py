@@ -63,3 +63,18 @@ def test_calendar_spoken_prompts():
     assert s("respond-to-event", {"response": "accepted"}) == "Want me to answer that invite with accepted?"
     assert s("update-event", {"summary": "Gym", "start": {"dateTime": "2026-11-14T07:30:00+01:00"}}) == \
         'Want me to change "Gym" to Sat 14 Nov at 07:30?'
+
+
+def test_windows_paths_with_backslashes(tmp_path):
+    # Regression: re.sub treated C:\Users\... in the replacement as escape sequences ("bad escape \U")
+    from pathlib import PureWindowsPath
+
+    f = tmp_path / "config.yaml"
+    f.write_text("name: Alfred\nconnectors: {}\n", encoding="utf-8")
+    creds = PureWindowsPath(r"C:\Users\roman\.alfred\google\gcp-oauth.keys.json")
+    add_connector_to_config(f, creds)
+    cfg = load_config(f)
+    assert cfg["connectors"]["google_calendar"]["env"]["GOOGLE_OAUTH_CREDENTIALS"] == str(creds)
+    f.write_text("connectors:\n  other: {command: x}\n", encoding="utf-8")
+    add_connector_to_config(f, creds)
+    assert "google_calendar" in load_config(f)["connectors"]

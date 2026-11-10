@@ -88,6 +88,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("words", nargs="*", help="text for `alfred say`")
     parser.add_argument("--voice", default=None, help="voice for `alfred say`, e.g. bm_george, am_michael")
     parser.add_argument("--rate", type=float, default=None, help="speed for `alfred say`, e.g. 1.2")
+    parser.add_argument("--reauth", action="store_true", help="`alfred connect`: sign in again")
     parser.add_argument("--text", action="store_true", help="(old style) same as `alfred text`")
     parser.add_argument("--no-overlay", action="store_true")
     parser.add_argument("--config", default=None, help="defaults to $ALFRED_CONFIG or config.yaml")
@@ -139,7 +140,7 @@ def main(argv: list[str] | None = None) -> None:
         from alfred.setup_google import connect
 
         cfg_path = Path(args.config or os.environ.get("ALFRED_CONFIG") or PROJECT_ROOT / "config.yaml")
-        sys.exit(connect(cfg_path, args.words[1] if len(args.words) > 1 else None))
+        sys.exit(connect(cfg_path, args.words[1] if len(args.words) > 1 else None, reauth=args.reauth))
     if args.command == "connectors":
         from alfred.connectors import describe_all
 

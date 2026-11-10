@@ -64,10 +64,12 @@ def add_connector_to_config(config_path: Path, creds: Path) -> str:
     if re.search(r"^\s{2}google_calendar:\s*$", text, flags=re.M):
         return "already in config.yaml"
     block = CONNECTOR_BLOCK.format(package=PACKAGE, creds=str(creds).replace("'", "''"))
+    insert = "connectors:\n" + block.rstrip("\n")
+    # a function as the replacement, so Windows backslashes (C:\Users\...) are taken literally
     if re.search(r"^connectors:\s*\{\s*\}\s*$", text, flags=re.M):
-        text = re.sub(r"^connectors:\s*\{\s*\}\s*$", "connectors:\n" + block.rstrip("\n"), text, count=1, flags=re.M)
+        text = re.sub(r"^connectors:\s*\{\s*\}\s*$", lambda _m: insert, text, count=1, flags=re.M)
     elif re.search(r"^connectors:\s*$", text, flags=re.M):
-        text = re.sub(r"^connectors:\s*$", "connectors:\n" + block.rstrip("\n"), text, count=1, flags=re.M)
+        text = re.sub(r"^connectors:\s*$", lambda _m: insert, text, count=1, flags=re.M)
     else:
         text = text.rstrip("\n") + "\n\nconnectors:\n" + block
     config_path.write_text(text, encoding="utf-8")
@@ -78,7 +80,7 @@ def _npx() -> str:
     return "npx.cmd" if sys.platform == "win32" else "npx"
 
 
-def connect(config_path: Path, client_file: str | None = None) -> int:
+def connect(config_path: Path, client_file: str | None = None, reauth: bool = False) -> int:
     print("== Google Calendar for Alfred ==")
     src = Path(client_file).expanduser() if client_file else None
     if src is None and not CREDS.exists():
@@ -104,9 +106,14 @@ def connect(config_path: Path, client_file: str | None = None) -> int:
         print("[x] npx not found - install Node.js from https://nodejs.org and open a new terminal")
         return 1
 
-    print("[..] opening Google sign-in in your browser - pick your account and allow calendar access")
-    env = {**os.environ, "GOOGLE_OAUTH_CREDENTIALS": str(CREDS)}
-    code = subprocess.run([_npx(), "-y", PACKAGE, "auth"], env=env).returncode
+    token = Path.home() / ".config" / "google-calendar-mcp" / "tokens.json"
+    if token.exists() and not reauth:
+        print(f"[ok] already signed in ({token}) - use --reauth to sign in again")
+        code = 0
+    else:
+        print("[..] opening Google sign-in in your browser - pick your account and allow calendar access")
+        env = {**os.environ, "GOOGLE_OAUTH_CREDENTIALS": str(CREDS)}
+        code = subprocess.run([_npx(), "-y", PACKAGE, "auth"], env=env).returncode
     if code != 0:
         print("[x] sign-in didn't finish. If Google says 'access blocked', add your Gmail as a Test user on the "
               "OAuth consent screen, then run this again.")
