@@ -83,6 +83,10 @@ class Brain:
         from alfred.connectors import load_connectors
 
         servers = {c.name: c.server for c in load_connectors(cfg)}
+        if cfg.get("browser_control", {}).get("enabled"):
+            from alfred.tools import browser_control
+
+            servers[browser_control.SERVER_NAME] = browser_control.server_config(cfg)
         if alfred_server:
             servers["alfred"] = alfred_server
         return servers

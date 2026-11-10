@@ -24,7 +24,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-RESERVED = {"alfred"}  # Alfred's own built-in tool server
+RESERVED = {"alfred", "browser"}  # Alfred's own built-in tool servers
 MODES = {"read_only", "ask_writes", "ask_all"}
 
 # Words that mean "just looking" vs "changing something". A tool is a READ only if its name has a read word

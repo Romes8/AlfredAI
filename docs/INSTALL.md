@@ -157,6 +157,29 @@ Every command is checked before it runs. On Windows they run in PowerShell, hidd
 Anything Alfred doesn't recognise counts as a change, so it asks. For a chain like `dir; del x`, the riskiest part decides.
 When he asks, he reads out the **actual command**, not a description of it.
 
+### Browser control (click, play videos, fill forms)
+Off by default. Turn it on in `config.yaml` (needs Node.js, which you already have for Claude):
+```yaml
+browser_control:
+  enabled: true
+```
+Alfred then drives **his own Chrome window**, using Microsoft's Playwright MCP and a separate profile in `~/.alfred/browser-profile`.
+Your everyday Chrome isn't touched. Log in to sites (YouTube, etc.) in *his* window once and he stays logged in there.
+The first use downloads the tool (~20 s).
+
+Try: "Alfred, play some lofi on YouTube", "pause it", "fill in the contact form on this page with my details".
+
+| Action | What happens |
+|---|---|
+| Open pages, click links / play / next, scroll, read the page | automatic |
+| Type anything, fill forms, choose options, press Enter | asks (he says what he'll type, and where) |
+| Click buy / pay / order / send / delete / confirm / subscribe / sign out… | asks (`on_risky_click: deny` = never) |
+| Run JavaScript on the page, upload files from your PC | blocked |
+
+He never completes a purchase or payment: he stops at the last step for you to finish.
+`use_my_chrome: true` lets him drive your real Chrome (with all your logins) through the "Playwright MCP Bridge"
+extension. That's more convenient but riskier, so leave it off unless you need it.
+
 ### Memory (between sessions)
 Alfred keeps long-term notes in **`memory.md`** in his folder (`agent.workspace`, e.g. `Documents\Alfred\memory.md`).
 - "Alfred, remember that Anna's birthday is March 3rd" saves a line. "Alfred, forget Anna's birthday" removes it.

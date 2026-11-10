@@ -65,6 +65,7 @@ class PermissionPolicy:
         self.cmd_on = {"sensitive": c.get("on_read_file", "ask"), "change": c.get("on_change", "ask"),
                        "delete": c.get("on_delete", "ask")}
         self.connectors = {c.prefix: c for c in conn_mod.load_connectors(cfg)}
+        self.cfg = cfg
 
     # ---------- path helpers ----------
     @staticmethod
@@ -132,6 +133,13 @@ class PermissionPolicy:
             return Decision("allow" if self.auto_open_apps else "ask")
         if tool.startswith(ALFRED_PREFIX):
             return Decision("allow")
+        if tool.startswith("mcp__browser__"):
+            from alfred.tools import browser_control
+
+            if not self.cfg.get("browser_control", {}).get("enabled"):
+                return Decision("deny", "Browser control is off on this machine.")
+            action, reason = browser_control.decide(tool[len("mcp__browser__"):], args, self.cfg)
+            return Decision(action, reason)
         if tool.startswith("mcp__"):
             for prefix, c in self.connectors.items():
                 if tool.startswith(prefix):
@@ -231,6 +239,10 @@ def summarize(tool: str, args: dict[str, Any]) -> tuple[str, str]:
         url = str(args.get("url", ""))
         host = re.sub(r"^https?://", "", url).split("/")[0]
         return f"I want to open a page on {host}.", f"FETCH\n\n{url}"
+    if tool.startswith("mcp__browser__"):
+        from alfred.tools import browser_control
+
+        return browser_control.summarize(tool[len("mcp__browser__"):], args)
     if tool.startswith("mcp__") and tool.count("__") >= 2:
         _, service, short = tool.split("__", 2)
         import json
