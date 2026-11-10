@@ -49,7 +49,7 @@ DEFAULTS: dict[str, Any] = {
         "max_utterance_s": 20,
     },
     "stt": {"model": "small.en", "device": "cuda", "compute_type": "float16"},
-    "tts": {"engine": "kokoro", "voice": "bm_george", "rate": 1.1,
+    "tts": {"engine": "kokoro", "voice": "bm_lewis", "rate": 1.1,
             "kokoro_model": "./models/kokoro-v1.0.onnx", "kokoro_voices": "./models/voices-v1.0.bin",
             "piper_model": "./models/en_GB-alan-medium.onnx"},
     "apps": {"enabled": True, "auto_open": True},
