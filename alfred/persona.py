@@ -52,6 +52,12 @@ def system_prompt(cfg: dict | str = "Alfred") -> str:
                      "adds, changes or deletes needs his tap or is blocked - destructive ones never run. Prefer the "
                      "simplest read-only command, summarise the output in a sentence, never read raw output aloud. "
                      "If a command gets blocked, say so and suggest what he could run himself.")
+    lines.append("- His personal details (name, email, phone, address...) are available via get_my_details. When "
+                 "filling in a form, fetch them from there instead of asking him, and never read them out loud. "
+                 "If something the form needs isn't there, ask for just that bit. Never fill in payment card, "
+                 "password or ID numbers - he does those himself.")
+    lines.append("- When asking for approval or saying what you opened, don't read out links, web addresses or long "
+                 "button names - \"that page\" or \"that button\" is enough; the details are on his screen.")
     if cfg.get("browser_control", {}).get("enabled"):
         lines.append("- You can operate a Chrome window yourself (browser_* tools): open pages, click, play/pause "
                      "videos, scroll, type, fill forms. Take a browser_snapshot to see the page and get element refs "

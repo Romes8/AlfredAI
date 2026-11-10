@@ -181,6 +181,29 @@ He never completes a purchase or payment: he stops at the last step for you to f
 `use_my_chrome: true` lets him drive your real Chrome (with all your logins) through the "Playwright MCP Bridge"
 extension. That's more convenient but riskier, so leave it off unless you need it.
 
+### Your details for forms
+Put them in `config.yaml` once and Alfred uses them whenever he fills something in, instead of asking you:
+```yaml
+profile:
+  name: Roman Zvoda
+  email: you@example.com
+  phone: "+45 12 34 56 78"
+  address:
+    street: Example Street 1
+    postal_code: "2100"
+    city: Copenhagen
+    country: Denmark
+```
+- They're only sent to Claude when he's actually filling in a form, not with every question.
+- He never reads them out loud. Filling the form still asks for your tap ("Want me to fill in the form with your details?").
+- Card numbers, CVV, passwords, PINs, bank/IBAN and ID numbers (CPR, passport…) are **refused**, even if you add them.
+  You always type those yourself.
+
+### Shorter approval prompts
+By default he doesn't read out links or button names when asking ("Want me to open that page?", "Want me to click that?").
+The details are on the overlay. Terminal commands are the exception: he always says those exactly, for safety.
+Set `approvals.say_details: true` to hear everything.
+
 ### Memory (between sessions)
 Alfred keeps long-term notes in **`memory.md`** in his folder (`agent.workspace`, e.g. `Documents\Alfred\memory.md`).
 - "Alfred, remember that Anna's birthday is March 3rd" saves a line. "Alfred, forget Anna's birthday" removes it.

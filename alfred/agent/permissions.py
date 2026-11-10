@@ -66,6 +66,7 @@ class PermissionPolicy:
                        "delete": c.get("on_delete", "ask")}
         self.connectors = {c.prefix: c for c in conn_mod.load_connectors(cfg)}
         self.cfg = cfg
+        self.say_details = bool(cfg.get("approvals", {}).get("say_details", False))
 
     # ---------- path helpers ----------
     @staticmethod
@@ -182,6 +183,20 @@ class PermissionPolicy:
         return Decision("ask")
 
 
+def _quiet(tool: str, args: dict[str, Any]) -> str | None:
+    if tool == OPEN_URL:
+        return QUIET["open_urls"] if len(_urls(args)) > 1 else QUIET["open_url"]
+    if tool.startswith("mcp__browser__"):
+        from alfred.tools import browser_control
+
+        short = tool[len("mcp__browser__"):]
+        return {"browser_click": QUIET["click_sensitive"] if browser_control.page.sensitive() else QUIET["click"],
+                "browser_type": QUIET["type"], "browser_fill_form": QUIET["fill"],
+                "browser_select_option": QUIET["select"], "browser_navigate": QUIET["navigate"],
+                "browser_press_key": QUIET["enter"]}.get(short)
+    return None  # commands, file writes, connectors etc. keep their full spoken summary
+
+
 URL_RE = re.compile(r"https?://[^\s\"'<>)\]}\\]+", re.I)
 
 
@@ -196,8 +211,25 @@ def _urls(args: dict[str, Any]) -> list[str]:
     return [u.strip() for u in urls if str(u).strip()]
 
 
-def summarize(tool: str, args: dict[str, Any]) -> tuple[str, str]:
+QUIET = {  # approvals.say_details: false -> short spoken prompt, the details are on the overlay
+    "open_url": "Want me to open that page?",
+    "open_urls": "Want me to open those pages?",
+    "click": "Want me to click that?",
+    "click_sensitive": "Want me to click that? Heads up, it's a payment or account page.",
+    "type": "Want me to type that in?",
+    "fill": "Want me to fill in the form with your details?",
+    "select": "Want me to pick that option?",
+    "navigate": "Want me to open that page?",
+    "enter": "Want me to press enter?",
+}
+
+
+def summarize(tool: str, args: dict[str, Any], say_details: bool = True) -> tuple[str, str]:
     """(short spoken summary, longer detail for the overlay)."""
+    if not say_details:
+        quiet = _quiet(tool, args)
+        if quiet:
+            return quiet, summarize(tool, args, True)[1]
     if tool == "Write":
         content = str(args.get("content", ""))
         lines = content.count("\n") + 1 if content else 0
@@ -298,7 +330,7 @@ class PermissionGate:
             return PermissionResultAllow()
         if d.action == "deny":
             return PermissionResultDeny(message=d.reason)
-        summary, detail = summarize(tool, args)
+        summary, detail = summarize(tool, args, self.policy.say_details)
         async with self._lock:
             if self.bus:
                 self.bus.emit("permission", tool=tool, summary=summary, detail=detail, result="pending")

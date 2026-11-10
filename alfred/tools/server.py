@@ -166,7 +166,27 @@ def build_server(cfg: dict):
                                          int(ccfg.get("timeout_s", 60)))
         return {"content": [{"type": "text", "text": json.dumps(result)}]}
 
-    tools = []
+    @tool(
+        "get_my_details",
+        "Roman's personal details from his config (name, email, phone, address, ...). Use it whenever you fill in a "
+        "form for him instead of asking him. Optionally pass `fields` to get only some. Don't read the values out "
+        "loud.",
+        {"type": "object", "properties": {"fields": {"type": "array", "items": {"type": "string"}}}},
+    )
+    async def get_my_details(args):
+        import json
+
+        from alfred.profile import load_profile
+
+        prof = load_profile(cfg)
+        wanted = [f.lower() for f in (args.get("fields") or [])]
+        if wanted:
+            prof = {k: v for k, v in prof.items() if any(w in k.lower() for w in wanted)} or prof
+        if not prof:
+            prof = {"message": "No details saved yet - he can add them under `profile:` in config.yaml."}
+        return {"content": [{"type": "text", "text": json.dumps(prof, ensure_ascii=False)}]}
+
+    tools = [get_my_details]
     if cfg.get("windows", {}).get("enabled", True):
         tools += [list_windows, arrange_window]
     if ccfg.get("enabled", False):
