@@ -5,7 +5,7 @@ Your voice-first buddy on top of Claude. Ask about **anything you see or want to
 - **Trigger:** tap **right Alt** (Windows) / **right Option** (macOS) and just talk. AltGr shortcuts like AltGr+2 for `@` are ignored. Saying "Alfred" works too (optional), and you can say the question in the same breath.
 - **Purple edge glow** around every monitor while he's actively listening, so you always know when he's hearing you.
 - **Runs on your Claude subscription** through the Claude Agent SDK, with Haiku by default. Say "think hard" or "research" to switch to Sonnet for that one question.
-- **Read-only by default.** He reads files in folders you allow. Any write, edit or command makes him ask out loud, and nothing happens until you say "yes".
+- **Locked down by default.** He reads only the folders you allow on that machine. Writes and opening URLs need your approval, terminal commands are off, and secrets files are always blocked.
 - **Sees your screen:** when your question is about something you're looking at, he takes a screenshot (one monitor, the active window or all monitors) and answers from what he sees. He only does this when you ask.
 - **Web search** for anything current. He can combine it with the screen: look first, then search for what's on it.
 - **Overlay:** a small always-on-top, click-through panel showing what he heard, his answer and permission prompts.
@@ -42,7 +42,9 @@ Your voice-first buddy on top of Claude. Ask about **anything you see or want to
 3. **Voice (free):** download a Piper voice into `models/`. For example, `en_GB-alan-medium.onnx` plus its `.onnx.json` from
    <https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_GB/alan/medium>. If there's no model, Alfred uses Windows' built-in voices.
 
-4. **Config:** `copy config.example.yaml config.yaml` and set `readable_dirs` / `writable_dirs`.
+4. **Config (per machine):** `copy config.example.yaml config.yaml` and set what Alfred may do on *this* computer:
+   which folders he can read/write, whether he can take screenshots (`screen.enabled`) and whether he can run
+   commands (`agent.allow_commands`, off by default). `config.yaml` is git-ignored, so each PC keeps its own.
 
 5. **Run:**
    ```powershell
@@ -62,8 +64,13 @@ Your voice-first buddy on top of Claude. Ask about **anything you see or want to
 - To use a different key, change `wake.trigger_key` (`right_ctrl`, `right_cmd`, `f13`).
 - macOS: the glow doesn't show over apps in native fullscreen Spaces. Use a normal or maximised window.
 
+### Approving things
+- Writes and opening a specific URL need approval. By default you **tap right Alt / right Option** to approve,
+  so a "yes" from a video or another person can't approve anything. Saying "no" or staying silent means no.
+  Set `permissions.approval: voice` or `both` to approve by saying "yes".
+- Web *searches* run without asking. Opening a specific page asks first, because a URL can carry data out.
+
 ### Spoken commands
-- **"yes" / "nah" / "show me"** when he asks for permission. Silence or anything unclear counts as no.
 - **"new chat"** wipes the conversation. **"never mind"** cancels.
 
 ## Wake word options

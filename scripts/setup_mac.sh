@@ -40,7 +40,7 @@ echo "[ok] Piper voice in models/"
 
 # 6) config + Alfred's writable folder
 [ -f config.yaml ] || cp config.example.yaml config.yaml
-mkdir -p "$HOME/Documents/Personal/Alfred"
+mkdir -p "$HOME/Documents/Alfred"
 
 # 7) tests
 python -m pytest -q

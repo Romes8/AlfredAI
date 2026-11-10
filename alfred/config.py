@@ -8,6 +8,13 @@ from typing import Any
 
 import yaml
 
+DENY_PATTERNS = [
+    ".env", ".ssh", "id_rsa", "id_ed25519", "id_ecdsa", "credentials", "secret", ".aws", ".azure", ".gcloud",
+    ".kube", "kubeconfig", ".pem", ".key", ".p12", ".pfx", ".crt", ".jks", "token", "password", "passwd",
+    ".npmrc", ".pypirc", ".netrc", ".git-credentials", ".git/config", ".docker/config.json", ".gnupg",
+    ".keychain", "1password", "bitwarden", "wallet", ".tfstate", ".tfvars",
+]
+
 DEFAULTS: dict[str, Any] = {
     "name": "Alfred",
     "agent": {
@@ -15,13 +22,15 @@ DEFAULTS: dict[str, Any] = {
         "smart_model": "sonnet",
         "smart_triggers": ["think hard", "think harder", "deep dive", "research", "take your time"],
         "max_turns": 12,
-        "workspace": "./alfred_workspace",
+        "workspace": "~/Documents/Alfred",
+        "allow_commands": False,
     },
     "permissions": {
-        "readable_dirs": ["~/Documents"],
+        "readable_dirs": ["~/Documents/Alfred"],
         "writable_dirs": ["~/Documents/Alfred"],
         "confirm_timeout_s": 15,
-        "deny_patterns": [".env", ".ssh", "id_rsa", "credentials", "secrets", ".aws", ".git/config"],
+        "approval": "key",
+        "deny_patterns": DENY_PATTERNS,
     },
     "wake": {
         "backend": "whisper",
@@ -41,7 +50,7 @@ DEFAULTS: dict[str, Any] = {
     "stt": {"model": "small.en", "device": "cuda", "compute_type": "float16"},
     "tts": {"engine": "piper", "piper_model": "./models/en_GB-alan-medium.onnx", "rate": 1.0},
     "overlay": {"enabled": True, "glow": True, "glow_thickness": 36, "panel": True, "position": "top-right", "width": 420, "opacity": 0.85, "hide_after_s": 12},
-    "screen": {"max_width": 1280, "jpeg_quality": 70},
+    "screen": {"enabled": True, "max_width": 1280, "jpeg_quality": 70},
 }
 
 
@@ -60,7 +69,8 @@ def expand(p: str | os.PathLike) -> Path:
 
 
 def load_config(path: str | os.PathLike | None = None) -> dict[str, Any]:
-    path = Path(path) if path else Path("config.yaml")
+    """Per-machine config: --config path > $ALFRED_CONFIG > ./config.yaml (git-ignored) > built-in defaults."""
+    path = Path(path or os.environ.get("ALFRED_CONFIG") or "config.yaml")
     data: dict[str, Any] = {}
     if path.exists():
         data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}

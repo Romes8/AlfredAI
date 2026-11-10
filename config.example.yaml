@@ -1,4 +1,5 @@
-# Copy to config.yaml and edit. config.yaml is git-ignored.
+# Per-machine config. Copy to config.yaml on each computer and edit - config.yaml is git-ignored,
+# so every PC Alfred runs on keeps its own rules. Or point ALFRED_CONFIG at a file, or pass --config.
 
 name: Alfred
 
@@ -9,18 +10,24 @@ agent:
   smart_model: sonnet        # used only when you ask Alfred to think harder
   smart_triggers: ["think hard", "think harder", "deep dive", "research", "take your time"]
   max_turns: 12
-  workspace: ./alfred_workspace   # Alfred's own scratch folder (its working directory)
+  workspace: ~/Documents/Alfred   # Alfred's own folder (his working directory)
+  allow_commands: false          # let Alfred run terminal commands (each one still needs your approval)
 
 permissions:
   # Folders Alfred may READ. Everything else is off limits.
   readable_dirs:
-    - "~/Documents"
-    - "~/Projects"
-  # Folders Alfred may WRITE to - and only after you say yes.
+    - "~/Documents/Alfred"
+  # Folders Alfred may WRITE to - and only after you approve.
   writable_dirs:
-    - "~/Documents/Personal/Alfred"
+    - "~/Documents/Alfred"
   confirm_timeout_s: 15
-  deny_patterns: [".env", ".ssh", "id_rsa", "credentials", "secrets", ".aws", ".git/config"]
+  # How you approve writes / opening a URL:
+  #   key   - tap the trigger key (a voice can't approve: a video or someone else could say "yes")
+  #   voice - say yes      both - either.   Saying "no" or silence always means no.
+  approval: key
+  # Secrets (.env, .ssh, .kube, *.pem, *.key, tokens, passwords, ...) are always blocked - see alfred/config.py.
+  # To replace that list, uncomment and write your own:
+  # deny_patterns: [".env", ".ssh"]
 
 wake:
   # How you summon Alfred:
@@ -65,5 +72,6 @@ overlay:
   hide_after_s: 12
 
 screen:
+  enabled: true               # false = Alfred can't take screenshots on this machine
   max_width: 1280
   jpeg_quality: 70

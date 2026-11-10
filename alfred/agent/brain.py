@@ -18,7 +18,12 @@ from alfred.agent.permissions import PermissionGate
 from alfred.config import expand
 from alfred.persona import system_prompt
 
-BUILTIN_TOOLS = ["Read", "Glob", "Grep", "Write", "Edit", "Bash", "WebSearch", "WebFetch"]
+BASE_TOOLS = ["Read", "Glob", "Grep", "Write", "Edit", "WebSearch", "WebFetch"]
+
+
+def builtin_tools(cfg: dict) -> list[str]:
+    """Shell commands are off unless this machine's config turns them on."""
+    return BASE_TOOLS + (["Bash"] if cfg["agent"].get("allow_commands") else [])
 
 OnText = Callable[[str], Awaitable[None]]
 
@@ -50,11 +55,11 @@ class Brain:
 
         self.options = ClaudeAgentOptions(
             model=self.model,
-            system_prompt=system_prompt(cfg["name"]),
-            tools=BUILTIN_TOOLS,
+            system_prompt=system_prompt(cfg),
+            tools=builtin_tools(cfg),
             # Alfred's own read-only tools (screenshots) are approved by the permission policy itself,
             # so no allowed_tools entry is needed (one would bypass the gate entirely).
-            mcp_servers={"alfred": mcp_server},
+            mcp_servers={"alfred": mcp_server} if mcp_server else {},
             can_use_tool=gate.can_use_tool,
             hooks={"PreToolUse": [HookMatcher(matcher=None, hooks=[gate.pre_tool_hook])]},
             permission_mode="default",

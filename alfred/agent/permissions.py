@@ -1,7 +1,8 @@
 """Alfred's permission model.
 
-  auto   - Read / Glob / Grep inside readable_dirs, web search, Alfred's own tools (screen)
-  ask    - Write / Edit / Bash -> Roman confirms out loud (or types y/n in text mode)
+  auto   - Read / Glob / Grep inside readable_dirs, web SEARCH, Alfred's own tools (screen)
+  ask    - Write / Edit, fetching a specific URL (WebFetch - a URL can smuggle data out),
+           Bash (only if agent.allow_commands is on) -> Roman approves (key tap / voice / y-n)
   deny   - anything outside the allowed folders, secrets files, destructive commands
 
 Enforced twice: a PreToolUse hook (fires for EVERY tool call, can't be bypassed by Claude Code's own
@@ -22,7 +23,8 @@ from alfred.config import expand
 READ_TOOLS = {"Read", "Glob", "Grep"}
 WRITE_TOOLS = {"Write", "Edit", "MultiEdit", "NotebookEdit"}
 SHELL_TOOLS = {"Bash"}
-WEB_TOOLS = {"WebSearch", "WebFetch"}
+WEB_TOOLS = {"WebSearch"}
+FETCH_TOOLS = {"WebFetch"}
 ALFRED_PREFIX = "mcp__alfred__"
 # Alfred tools that change something and therefore need a yes (none yet - placeholder for future tools)
 ALFRED_ASK: set[str] = set()
@@ -87,6 +89,8 @@ class PermissionPolicy:
             return Decision("ask" if tool in ALFRED_ASK else "allow")
         if tool in WEB_TOOLS:
             return Decision("allow")
+        if tool in FETCH_TOOLS:
+            return Decision("ask")
 
         if tool in READ_TOOLS or tool in WRITE_TOOLS:
             raw = self._path_arg(tool, args)
@@ -132,9 +136,14 @@ def summarize(tool: str, args: dict[str, Any]) -> tuple[str, str]:
         new = str(args.get("new_string", ""))[:600]
         return f"I want to edit {name}. Good to go?", f"EDIT {args.get('file_path')}\n\n- {old}\n+ {new}"
     if tool == "Bash":
+        # Speak the REAL command, never Claude's own description of it (that could be made to lie).
         cmd = str(args.get("command", ""))
-        desc = args.get("description") or "run a command"
-        return f"I want to {desc.rstrip('.').lower()}. Yes or no?", f"RUN\n\n{cmd}"
+        spoken = cmd if len(cmd) <= 120 else cmd[:120] + " and more, check the overlay"
+        return f"I want to run this command: {spoken}.", f"RUN\n\n{cmd}"
+    if tool == "WebFetch":
+        url = str(args.get("url", ""))
+        host = re.sub(r"^https?://", "", url).split("/")[0]
+        return f"I want to open a page on {host}.", f"FETCH\n\n{url}"
     return f"I want to use {tool}. Yes or no?", f"{tool}\n\n{args}"
 
 

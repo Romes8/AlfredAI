@@ -9,7 +9,10 @@ from alfred.tools import screen
 
 
 def build_server(cfg: dict):
+    """Returns (server, tool_names) - or (None, []) when this machine has no Alfred tools enabled."""
     scfg = cfg["screen"]
+    if not scfg.get("enabled", True):
+        return None, []
 
     @tool(
         "look_at_screen",

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+import sys
 
 from alfred.agent.brain import Brain
 from alfred.agent.permissions import PermissionGate, PermissionPolicy
@@ -82,23 +83,44 @@ async def run_voice(cfg: dict, bus: EventBus) -> None:
 
     timeout = cfg["permissions"]["confirm_timeout_s"]
 
+    mode = cfg["permissions"].get("approval", "key")  # key | voice | both
+    key_name = "right Option" if sys.platform == "darwin" else "right Alt"
+
     async def ask(summary: str, detail: str) -> bool:
+        """Approval. key: tap the trigger key = yes (a voice can't approve - a video or someone else in the room
+        could say "yes"). voice: say yes/no. both: either. Saying "no" or silence always = no."""
         bus.state("waiting_confirm")
-        await say(summary)
+        how = {"key": f"Tap {key_name} to approve, or say no.",
+               "voice": "Yes or no?",
+               "both": f"Tap {key_name} or say yes. Or no."}[mode]
+        wake.hotkey_pressed.clear()  # ignore taps from before the question
+        await say(f"{summary} {how}")
         for attempt in range(2):
-            answer = parse_answer(await listen(timeout))
-            if answer == "yes":
-                await say("Sorted.")
-                return True
+            # a tap while Alfred was still talking counts; a tap while listening cuts the recording short
+            heard = "" if wake.hotkey_pressed.is_set() else await listen(timeout)
+            if wake.hotkey_pressed.is_set():
+                wake.hotkey_pressed.clear()
+                if mode in ("key", "both"):
+                    await say("Sorted.")
+                    return True
+            answer = parse_answer(heard)
             if answer == "no":
                 await say("No worries, leaving it.")
                 return False
+            if answer == "yes" and mode in ("voice", "both"):
+                await say("Sorted.")
+                return True
             if answer == "show" and attempt == 0:
                 bus.emit("permission", summary=summary, detail=detail, result="pending", expand=True)
-                await say("It's up on the overlay. Yes or no?")
+                await say(f"It's up on the overlay. {how}")
                 continue
+            if answer == "yes" and mode == "key":
+                await say(f"Need a tap on {key_name} for that one, mate.")
+                continue
+            if not heard:
+                break  # silence = no
             if attempt == 0:
-                await say("Didn't catch that. Yes or no?")
+                await say(f"Didn't catch that. {how}")
         await say("I'll take that as a no.")
         return False
 
@@ -107,9 +129,7 @@ async def run_voice(cfg: dict, bus: EventBus) -> None:
     brain = Brain(cfg, gate, server, names, bus)
     await brain.start()
 
-    import sys
-
-    key = "right Option" if sys.platform == "darwin" else "right Alt"
+    key = key_name
     backend = cfg["wake"]["backend"]
     hint = f"tap {key}" + ("" if backend == "none" else f" or say \"{name}\"")
     print(f"[{name}] online - {hint}. The screen edge glows purple while I'm listening.")

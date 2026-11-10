@@ -18,7 +18,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(prog="alfred")
     parser.add_argument("--text", action="store_true", help="type instead of talk")
     parser.add_argument("--no-overlay", action="store_true")
-    parser.add_argument("--config", default="config.yaml")
+    parser.add_argument("--config", default=None, help="defaults to $ALFRED_CONFIG or ./config.yaml")
     args = parser.parse_args()
 
     cfg = load_config(args.config)
