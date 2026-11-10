@@ -173,6 +173,7 @@ async def run_voice(cfg: dict, bus: EventBus) -> None:
     else:
         hint = f"tap {key_name}" + ("" if backend == "none" else f" or say \"{name}\"")
     print(f"[{name}] online - {hint}. The screen edge glows purple while I'm listening.")
+    print("[alfred] READY", flush=True)
     await say(f"{name}'s online. What's good?")
 
     speech: asyncio.Queue[str | None] = asyncio.Queue()

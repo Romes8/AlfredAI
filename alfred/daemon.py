@@ -35,12 +35,16 @@ def running_pid() -> int | None:
     return None
 
 
+READY_MARKER = "[alfred] READY"
+STARTUP_TIMEOUT_S = 120  # first start downloads the speech model
+
+
 def _python_for_background() -> str:
+    # python.exe (not pythonw.exe) + CREATE_NO_WINDOW: no visible window, but the process still has a hidden
+    # console, so child processes (the Claude CLI) get valid stdin/stdout/stderr handles.
     exe = Path(sys.executable)
-    if sys.platform == "win32":
-        pythonw = exe.with_name("pythonw.exe")  # no console window
-        if pythonw.exists():
-            return str(pythonw)
+    if exe.name.lower() == "pythonw.exe":
+        exe = exe.with_name("python.exe")
     return str(exe)
 
 
@@ -53,6 +57,7 @@ def wakeup(extra_args: list[str]) -> int:
     log = open(LOG_FILE, "a", encoding="utf-8")
     log.write(f"\n===== wakeup {time.strftime('%Y-%m-%d %H:%M:%S')} =====\n")
     log.flush()
+    start_offset = LOG_FILE.stat().st_size
     cmd = [_python_for_background(), "-u", "-m", "alfred", "run", *extra_args]
     kwargs: dict = {"cwd": str(PROJECT_ROOT), "stdout": log, "stderr": subprocess.STDOUT,
                     "stdin": subprocess.DEVNULL, "env": {**os.environ, "PYTHONUNBUFFERED": "1"}}
@@ -62,12 +67,21 @@ def wakeup(extra_args: list[str]) -> int:
         kwargs["start_new_session"] = True  # keeps running after the terminal closes
     proc = subprocess.Popen(cmd, **kwargs)
     PID_FILE.write_text(str(proc.pid))
-    time.sleep(2.0)  # catch instant crashes (bad config, missing login...)
-    if proc.poll() is not None:
-        PID_FILE.unlink(missing_ok=True)
-        print(f"Alfred failed to start (exit {proc.returncode}). Last log lines:\n")
-        print(tail(20))
-        return 1
+    print("Waking Alfred up", end="", flush=True)
+    deadline = time.monotonic() + STARTUP_TIMEOUT_S
+    while time.monotonic() < deadline:
+        if proc.poll() is not None:
+            PID_FILE.unlink(missing_ok=True)
+            print(f"\nAlfred failed to start (exit {proc.returncode}). Last log lines:\n")
+            print(tail(25))
+            return 1
+        if READY_MARKER in _log_since(start_offset):
+            print(" ready.")
+            break
+        print(".", end="", flush=True)
+        time.sleep(1.0)
+    else:
+        print(f"\nStill starting after {STARTUP_TIMEOUT_S}s - check `alfred logs` (first start downloads models).")
     key = "right Option" if sys.platform == "darwin" else "right Alt"
     print(f"Alfred's up (pid {proc.pid}). Hold {key} and talk. `alfred sleep` to stop, `alfred logs` to peek.")
     return 0
@@ -101,6 +115,15 @@ def status() -> int:
     else:
         print("Asleep. `alfred wakeup` to start him.")
     return 0
+
+
+def _log_since(offset: int) -> str:
+    try:
+        with open(LOG_FILE, "rb") as f:
+            f.seek(offset)
+            return f.read().decode("utf-8", errors="replace")
+    except FileNotFoundError:
+        return ""
 
 
 def tail(n: int = 40) -> str:
