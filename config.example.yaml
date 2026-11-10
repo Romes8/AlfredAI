@@ -76,6 +76,11 @@ overlay:
   opacity: 0.85
   hide_after_s: 12
 
+links:
+  enabled: true               # Alfred can open web pages in your default browser
+  auto_open: false            # false = he asks first (tap to approve). A link can carry data out, so keep false
+                              # unless you trust everything he reads.
+
 screen:
   enabled: true               # false = Alfred can't take screenshots on this machine
   max_width: 1280

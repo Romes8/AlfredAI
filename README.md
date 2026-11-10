@@ -4,6 +4,9 @@ Your voice-first buddy on top of Claude. Ask about **anything you see or want to
 
 - **Push-to-talk:** **hold right Alt** (Windows) / **right Option** (macOS) while you talk and let go when you're done. He hears nothing while the key isn't held, so surrounding voices are ignored. (Prefer tap-then-talk? Set `wake.trigger_mode: tap`.)
 - **Tap mode (optional):** tap the key and just talk. AltGr shortcuts like AltGr+2 for `@` are ignored. Saying "Alfred" works too (optional), and you can say the question in the same breath.
+- **Talks while he thinks:** he starts speaking as soon as the first sentence is ready, instead of waiting for the whole answer.
+- **Interrupt him:** hold the key while he's talking and he stops right away and listens.
+- **Opens websites:** "Alfred, open the Colosseum ticket page" opens it in your default browser. He asks first (tap to approve) unless you set `links.auto_open: true`.
 - **Purple edge glow** around every monitor while he's actively listening, so you always know when he's hearing you.
 - **Runs on your Claude subscription** through the Claude Agent SDK, with Haiku by default. Say "think hard" or "research" to switch to Sonnet for that one question.
 - **Locked down by default.** He reads only the folders you allow on that machine. Writes and opening URLs need your approval, terminal commands are off, and secrets files are always blocked.

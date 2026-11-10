@@ -56,6 +56,7 @@ class WakeListener:
         self.key_down = threading.Event()
         self.key_up = threading.Event()
         self.cancelled = False
+        self.on_hold_start = None  # app hook: called the moment the key goes down (barge-in)
         self._setup_trigger_key(w.get("trigger_key"))
         self._oww = None
         self._porcupine = None
@@ -83,6 +84,8 @@ class WakeListener:
                 self.mic.capturing.set()  # start hearing NOW
                 self.hotkey_pressed.set()
                 self.key_down.set()
+                if self.on_hold_start:
+                    self.on_hold_start()
 
             def up() -> None:
                 self.key_up.set()

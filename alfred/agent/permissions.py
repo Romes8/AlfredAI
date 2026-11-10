@@ -26,8 +26,7 @@ SHELL_TOOLS = {"Bash"}
 WEB_TOOLS = {"WebSearch"}
 FETCH_TOOLS = {"WebFetch"}
 ALFRED_PREFIX = "mcp__alfred__"
-# Alfred tools that change something and therefore need a yes (none yet - placeholder for future tools)
-ALFRED_ASK: set[str] = set()
+OPEN_URL = "mcp__alfred__open_url"
 
 DESTRUCTIVE = [
     r"\brm\s+-[a-z]*r", r"\brmdir\b", r"\bdel\s+/[sq]", r"\bformat\s+[a-z]:", r"\bmkfs\b",
@@ -51,6 +50,7 @@ class PermissionPolicy:
         self.writable = [expand(d) for d in p["writable_dirs"]]
         self.workspace = expand(cfg["agent"]["workspace"])
         self.deny_patterns = [s.lower() for s in p["deny_patterns"]]
+        self.auto_open_links = bool(cfg.get("links", {}).get("auto_open", False))
 
     # ---------- path helpers ----------
     @staticmethod
@@ -85,8 +85,14 @@ class PermissionPolicy:
 
     # ---------- the decision ----------
     def decide(self, tool: str, args: dict[str, Any]) -> Decision:
+        if tool == OPEN_URL:
+            url = str(args.get("url", ""))
+            if not re.match(r"^https?://[^\s/]+", url, flags=re.I):
+                return Decision("deny", f"Not a web link: {url[:80]}")
+            # Opening a URL can carry data out in the link itself, so it asks unless links.auto_open is on.
+            return Decision("allow" if self.auto_open_links else "ask")
         if tool.startswith(ALFRED_PREFIX):
-            return Decision("ask" if tool in ALFRED_ASK else "allow")
+            return Decision("allow")
         if tool in WEB_TOOLS:
             return Decision("allow")
         if tool in FETCH_TOOLS:
@@ -140,6 +146,10 @@ def summarize(tool: str, args: dict[str, Any]) -> tuple[str, str]:
         cmd = str(args.get("command", ""))
         spoken = cmd if len(cmd) <= 120 else cmd[:120] + " and more, check the overlay"
         return f"I want to run this command: {spoken}.", f"RUN\n\n{cmd}"
+    if tool == OPEN_URL:
+        url = str(args.get("url", ""))
+        host = re.sub(r"^https?://", "", url).split("/")[0]
+        return f"Want me to open {host}?", f"OPEN IN BROWSER\n\n{url}"
     if tool == "WebFetch":
         url = str(args.get("url", ""))
         host = re.sub(r"^https?://", "", url).split("/")[0]

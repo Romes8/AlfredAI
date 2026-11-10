@@ -10,11 +10,13 @@ from claude_agent_sdk import (
     ClaudeSDKClient,
     HookMatcher,
     ResultMessage,
+    StreamEvent,
     TextBlock,
     ToolUseBlock,
 )
 
 from alfred.agent.permissions import PermissionGate
+from alfred.audio.stream import SentenceStreamer
 from alfred.config import expand
 from alfred.persona import system_prompt
 
@@ -67,6 +69,7 @@ class Brain:
             add_dirs=extra_dirs,
             setting_sources=[],
             max_turns=a["max_turns"],
+            include_partial_messages=True,  # live text deltas -> speak sentence by sentence
         )
         self.client = ClaudeSDKClient(options=self.options)
         self._connected = False
@@ -86,23 +89,49 @@ class Brain:
         self.client = ClaudeSDKClient(options=self.options)
         await self.start()
 
+    async def interrupt(self) -> None:
+        """Stop the answer being generated (Roman talked over Alfred)."""
+        try:
+            await self.client.interrupt()
+        except Exception as e:
+            print(f"[brain] interrupt failed: {e}")
+
     async def ask(self, text: str, on_text: OnText) -> str:
+        """Ask Claude. on_text is called with each SENTENCE as soon as it has been generated,
+        so Alfred can start speaking while the rest of the answer is still being written."""
         smart = wants_smart_model(text, self.triggers)
         if smart:
             await self.client.set_model(self.smart_model)
-        prompt = text
         full: list[str] = []
+        streamer = SentenceStreamer()
+        streamed = False  # got live text deltas for the current assistant message
         try:
-            await self.client.query(prompt)
+            await self.client.query(text)
             async for msg in self.client.receive_response():
-                if isinstance(msg, AssistantMessage):
+                if isinstance(msg, StreamEvent):
+                    ev = msg.event or {}
+                    etype = ev.get("type")
+                    if etype == "content_block_delta" and ev.get("delta", {}).get("type") == "text_delta":
+                        streamed = True
+                        for sentence in streamer.feed(ev["delta"].get("text", "")):
+                            await on_text(sentence)
+                    elif etype in ("content_block_stop", "message_stop"):
+                        for sentence in streamer.flush():
+                            await on_text(sentence)
+                elif isinstance(msg, AssistantMessage):
+                    for sentence in streamer.flush():
+                        await on_text(sentence)
                     for block in msg.content:
                         if isinstance(block, TextBlock) and block.text.strip():
                             full.append(block.text)
-                            await on_text(block.text)
+                            if not streamed:  # no live deltas (e.g. streaming unavailable): speak it now
+                                await on_text(block.text)
                         elif isinstance(block, ToolUseBlock) and self.bus:
                             self.bus.emit("tool", name=block.name)
+                    streamed = False
                 elif isinstance(msg, ResultMessage):
+                    for sentence in streamer.flush():
+                        await on_text(sentence)
                     if msg.is_error and not full:
                         err = msg.result or "something went wrong"
                         await on_text(f"Ah mate, hit a snag: {err}")

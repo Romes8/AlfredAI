@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+import threading
 from pathlib import Path
 
 
@@ -27,6 +28,8 @@ class Speaker:
         self.mic = mic  # muted while speaking
         self._piper = None
         self._engine = self.cfg["engine"]
+        self.stopped = threading.Event()  # set by stop(): abandon whatever is being said
+        self._pyttsx = None
         if self._engine == "piper":
             model = Path(self.cfg["piper_model"])
             if model.exists():
@@ -37,21 +40,42 @@ class Speaker:
                 print(f"[tts] Piper model not found at {model} - using Windows voices. See README to download one.")
                 self._engine = "pyttsx3"
 
+    def stop(self) -> None:
+        """Cut Alfred off mid-sentence (called from the key listener thread)."""
+        self.stopped.set()
+        try:
+            import sounddevice as sd
+
+            sd.stop()
+        except Exception:
+            pass
+        if self._pyttsx is not None:
+            try:
+                self._pyttsx.stop()
+            except Exception:
+                pass
+        if self.mic:
+            self.mic.muted.clear()
+
     def say(self, text: str) -> None:
         text = clean_for_speech(text)
-        if not text:
+        if not text or self.stopped.is_set():
             return
-        if self.mic:
+        if self.mic and not self.mic.capturing.is_set():
             self.mic.muted.set()
         try:
             if self._engine == "piper" and self._piper is not None:
                 for sentence in split_sentences(text):
+                    if self.stopped.is_set():
+                        break
                     self._say_piper(sentence)
             else:
                 self._say_pyttsx3(text)
         finally:
             if self.mic:
-                self.mic.flush()
+                # don't throw away audio if the user is already holding the key to talk over Alfred
+                if not self.mic.capturing.is_set():
+                    self.mic.flush()
                 self.mic.muted.clear()
 
     def _say_piper(self, text: str) -> None:
@@ -74,6 +98,8 @@ class Speaker:
         import pyttsx3
 
         eng = pyttsx3.init()
+        self._pyttsx = eng
         eng.setProperty("rate", int(185 * self.cfg.get("rate", 1.0)))
         eng.say(text)
         eng.runAndWait()
+        self._pyttsx = None
