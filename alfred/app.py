@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import re
 import sys
+import threading
 
 from alfred.agent.brain import Brain
 from alfred.agent.permissions import PermissionGate, PermissionPolicy
@@ -84,12 +85,28 @@ async def run_voice(cfg: dict, bus: EventBus) -> None:
 
     timeout = cfg["permissions"]["confirm_timeout_s"]
 
+    # --- barge-in: holding the key while Alfred is answering shuts him up and starts listening
+    loop = asyncio.get_running_loop()
+    answering = threading.Event()   # an answer is being generated / spoken
+    barged = threading.Event()      # Roman talked over Alfred during this answer
+
+    def on_hold_start() -> None:    # key listener thread
+        if answering.is_set() and not barged.is_set():
+            barged.set()
+            speaker.stop()
+            bus.state("listening")  # glow on immediately
+            loop.call_soon_threadsafe(lambda: asyncio.ensure_future(brain.interrupt()))
+
+    wake.on_hold_start = on_hold_start
+
     mode = cfg["permissions"].get("approval", "key")  # key | voice | both
     key_name = "right Option" if sys.platform == "darwin" else "right Alt"
 
     async def ask_hold(summary: str, detail: str) -> bool:  # noqa: ARG001
         """Hold-to-talk approval: a press of the key = yes. Doing nothing = no. The mic stays off."""
         bus.state("waiting_tap")
+        answering.clear()  # a press now means "yes", not "stop talking"
+        speaker.stopped.clear()
         wake.hotkey_pressed.clear()
         await say(f"{summary} Tap {key_name} to approve, or just leave it.")
         loop = asyncio.get_running_loop()
@@ -100,9 +117,11 @@ async def run_voice(cfg: dict, bus: EventBus) -> None:
                 wake.hotkey_pressed.clear()
                 wake.reset_hold()  # that press was a "yes", not the start of a new question
                 await say("Sorted.")
+                answering.set()
                 return True
             await asyncio.sleep(0.05)
         await say("Leaving it then.")
+        answering.set()
         return False
 
     async def ask(summary: str, detail: str) -> bool:
@@ -156,9 +175,22 @@ async def run_voice(cfg: dict, bus: EventBus) -> None:
     print(f"[{name}] online - {hint}. The screen edge glows purple while I'm listening.")
     await say(f"{name}'s online. What's good?")
 
+    speech: asyncio.Queue[str | None] = asyncio.Queue()
+
+    async def speech_worker() -> None:
+        """Speaks sentences in order while Claude keeps generating the next ones."""
+        while True:
+            sentence = await speech.get()
+            if sentence is None:
+                return
+            if not barged.is_set():
+                await say(sentence)
+
     async def on_text(t: str) -> None:
+        if barged.is_set():
+            return
         bus.emit("reply", text=t)
-        await say(t)
+        await speech.put(t)
 
     try:
         while True:
@@ -184,13 +216,25 @@ async def run_voice(cfg: dict, bus: EventBus) -> None:
                 await say("Clean slate, mate.")
                 continue
             bus.state("thinking")
+            barged.clear()
+            speaker.stopped.clear()
+            answering.set()
+            worker = asyncio.create_task(speech_worker())
             try:
                 reply = await brain.ask(command, on_text)
                 print(f"{name}: {reply}\n")
             except Exception as e:  # keep Alfred alive whatever happens
                 bus.emit("error", text=str(e))
-                await say("Ah, something broke on my side. Check the console.")
+                if not barged.is_set():
+                    await speech.put("Ah, something broke on my side. Check the console.")
                 print(f"[{name}] error: {e}")
+            finally:
+                await speech.put(None)
+                await worker
+                answering.clear()
+                speaker.stopped.clear()
+                if barged.is_set():
+                    print(f"[{name}] (interrupted)")
     finally:
         await brain.stop()
         mic.stop()

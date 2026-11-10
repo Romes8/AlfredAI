@@ -134,6 +134,9 @@ def test_commands_off_by_default_and_screen_can_be_disabled(cfg):
     cfg["agent"]["allow_commands"] = True
     assert "Bash" in builtin_tools(cfg)
     cfg["screen"]["enabled"] = False
+    _, names = build_server(cfg)
+    assert names == ["mcp__alfred__open_url"]
+    cfg["links"]["enabled"] = False
     assert build_server(cfg) == (None, [])
     assert "CAN'T see his screen" in system_prompt(cfg)
 
@@ -143,3 +146,14 @@ def test_config_from_env(tmp_path, monkeypatch):
     f.write_text("screen:\n  enabled: false\n")
     monkeypatch.setenv("ALFRED_CONFIG", str(f))
     assert load_config()["screen"]["enabled"] is False
+
+
+def test_open_url_asks_by_default_and_rejects_non_web(cfg):
+    p = PermissionPolicy(cfg)
+    assert p.decide("mcp__alfred__open_url", {"url": "https://colosseo.it"}).action == "ask"
+    assert p.decide("mcp__alfred__open_url", {"url": "file:///etc/passwd"}).action == "deny"
+    assert p.decide("mcp__alfred__open_url", {"url": "javascript:alert(1)"}).action == "deny"
+    cfg["links"]["auto_open"] = True
+    assert PermissionPolicy(cfg).decide("mcp__alfred__open_url", {"url": "https://colosseo.it"}).action == "allow"
+    spoken, _ = summarize("mcp__alfred__open_url", {"url": "https://colosseo.it/tickets?x=1"})
+    assert spoken == "Want me to open colosseo.it?"

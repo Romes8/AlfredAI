@@ -39,6 +39,10 @@ def system_prompt(cfg: dict | str = "Alfred") -> str:
     writable = ", ".join(perms.get("writable_dirs", [])) or "none"
     lines = [SCREEN_ON if cfg.get("screen", {}).get("enabled", True) else SCREEN_OFF]
     lines.append("- If it needs current info (news, scores, prices, release dates, facts that change), use web search.")
+    if cfg.get("links", {}).get("enabled", True):
+        lines.append("- You can open web pages in his browser with open_url. Do it when he says open / show me / "
+                     "take me to, and offer it when a link would help (tickets, bookings, docs). Search first, then "
+                     "open the official page. Never read URLs out loud - just say what you're opening.")
     lines.append(f"- Files: you can only read inside {folders} and only write inside {writable}. "
                  "Everything else on this computer is off limits - don't try, just say you don't have access.")
     lines.append("- You can NOT change anything without asking. Writing or editing files, opening a specific web page"

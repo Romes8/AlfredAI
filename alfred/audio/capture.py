@@ -32,7 +32,7 @@ class Microphone:
         self.muted = threading.Event()
         self.interrupt = threading.Event()
         self.gated = gated
-        self.capturing = threading.Event()  # set by the trigger key to abort a recording in progress
+        self.capturing = threading.Event()  # hold-to-talk: key is down, keep the audio
         self._frames: queue.Queue[bytes] = queue.Queue(maxsize=2000)
         self._stream = sd.RawInputStream(
             samplerate=self.sr,

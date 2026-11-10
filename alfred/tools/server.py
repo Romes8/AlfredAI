@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import asyncio
+import webbrowser
+from urllib.parse import urlparse
 
 from claude_agent_sdk import create_sdk_mcp_server, tool
 
@@ -11,8 +13,6 @@ from alfred.tools import screen
 def build_server(cfg: dict):
     """Returns (server, tool_names) - or (None, []) when this machine has no Alfred tools enabled."""
     scfg = cfg["screen"]
-    if not scfg.get("enabled", True):
-        return None, []
 
     @tool(
         "look_at_screen",
@@ -36,5 +36,25 @@ def build_server(cfg: dict):
             {"type": "text", "text": desc},
         ]}
 
-    tools = [look_at_screen]
+    @tool(
+        "open_url",
+        "Open a web page in Roman's default browser so he can see it - official sites, ticket pages, maps, "
+        "videos, docs. Use it when he says 'open', 'show me', 'take me to', 'pull up', or when a link would "
+        "clearly help (offer it). Only http/https URLs. Prefer official sources you found via web search.",
+        {"type": "object", "properties": {"url": {"type": "string"}}, "required": ["url"]},
+    )
+    async def open_url(args):
+        url = str(args.get("url", "")).strip()
+        if urlparse(url).scheme not in ("http", "https"):
+            return {"content": [{"type": "text", "text": "Only http/https links can be opened."}], "is_error": True}
+        ok = await asyncio.to_thread(webbrowser.open, url, 2)
+        return {"content": [{"type": "text", "text": f"Opened {url}" if ok else f"Couldn't open {url}"}]}
+
+    tools = []
+    if scfg.get("enabled", True):
+        tools.append(look_at_screen)
+    if cfg.get("links", {}).get("enabled", True):
+        tools.append(open_url)
+    if not tools:
+        return None, []
     return create_sdk_mcp_server(name="alfred", version="0.2.0", tools=tools), [f"mcp__alfred__{t.name}" for t in tools]
