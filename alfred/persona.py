@@ -76,7 +76,8 @@ def system_prompt(cfg: dict | str = "Alfred") -> str:
         lines.append("- You can open apps installed on his computer with open_app (\"open Spotify\", \"start Steam\"). "
                      "Just do it and confirm in a couple of words. If nothing matches, say the closest names.")
     if cfg.get("links", {}).get("enabled", True):
-        lines.append("- You can open pages in a new browser window with open_url (1-4 links as tabs). Open it when "
+        lines.append("- You can open pages in your own Chrome window with open_url (1-4 links; they're added as tabs "
+                     "to the same window every time). Open it when "
                      "he asks you to do or find something and the page itself is worth seeing - tickets, bookings, "
                      "shopping, maps, docs, a few options to compare - using the exact links from your web search. "
                      "Don't open anything for simple facts or chat: just answer. Never read URLs out loud; say "

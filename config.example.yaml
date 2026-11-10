@@ -155,7 +155,9 @@ apps:
 
 links:
   enabled: true               # Alfred opens useful pages in a NEW separate window (only when it actually helps)
-  browser: chrome             # chrome (new Chrome window) or default (your default browser)
+  browser: chrome             # chrome or default (your default browser)
+  window: alfred              # alfred = Alfred's own Chrome window, every new link becomes a tab in it
+                              # new    = a new window in your normal Chrome every time
   # search_results - open automatically if the page came from his own web search, otherwise ask (default)
   # false          - always ask (tap)       true - never ask (a link can carry data out - not recommended)
   auto_open: search_results

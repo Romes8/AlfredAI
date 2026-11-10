@@ -66,7 +66,8 @@ DEFAULTS: dict[str, Any] = {
     "commands": {"enabled": False, "on_read_file": "ask", "on_change": "ask", "on_delete": "ask",
                  "timeout_s": 60, "cwd": None},
     "overlay": {"enabled": True, "glow": True, "glow_thickness": 36, "glow_intensity": 0.8, "panel": True, "position": "top-right", "width": 420, "opacity": 0.85, "hide_after_s": 12},
-    "links": {"enabled": True, "auto_open": "search_results", "browser": "chrome"},
+    "links": {"enabled": True, "auto_open": "search_results", "browser": "chrome",
+              "window": "alfred"},
     "connectors": {},
     "screen": {"enabled": True, "max_width": 1280, "jpeg_quality": 70},
 }

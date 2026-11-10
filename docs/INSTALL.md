@@ -127,7 +127,10 @@ powershell -ExecutionPolicy Bypass -File scripts\install_shortcuts.ps1
   `engine: piper` is lighter but more robotic. `engine: pyttsx3` uses the built-in Windows voices.
 - **Speed:** `tts.rate`. 1.0 is normal, 1.1 is the default, 1.2–1.3 is brisk.
 - **Pages:** when you ask him to find something and the page is worth seeing (tickets, shops, maps, a few options),
-  he opens it in a **new Chrome window**, one tab per link. For simple facts he just answers.
+  he opens it in **his own Chrome window**: the first link opens the window, every later link becomes a new tab
+  in that same window, never in your own Chrome windows. For simple facts he just answers.
+  That window uses its own profile (`~/.alfred/chrome-links`), so log in to sites there once if you need to.
+  `links.window: new` = a new window in your normal Chrome each time instead.
   Pages from his own web search open straight away; any other link asks for a tap first (`links.auto_open`).
 - **Apps:** "Alfred, open Spotify / Steam / VS Code". Only installed apps (from the Start menu) can be opened,
   never arbitrary commands. Set `apps.auto_open: false` to make him ask first, or `apps.enabled: false` to turn it off.

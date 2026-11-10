@@ -54,7 +54,8 @@ def build_server(cfg: dict):
 
     @tool(
         "open_url",
-        "Open web pages for Roman in a NEW separate browser window (one tab per link). Use it when he asks to "
+        "Open web pages for Roman in YOUR OWN Chrome window (Alfred's window) - the first time it opens the window, "
+        "after that each link becomes a new tab in it. Use it when he asks to "
         "open / show / pull something up, or when you looked something up and the page itself is genuinely useful "
         "to see (tickets, bookings, product pages, maps, docs, a few options to compare). Don't use it for simple "
         "facts you can just say. Pass 1-4 of the best links, ideally exact URLs from your web search results.",
@@ -67,8 +68,10 @@ def build_server(cfg: dict):
         urls = url_list(args)
         if not urls or any(urlparse(u).scheme not in ("http", "https") for u in urls):
             return {"content": [{"type": "text", "text": "Only http/https links can be opened."}], "is_error": True}
-        used = await asyncio.to_thread(browser.open_in_new_window, urls, cfg.get("links", {}).get("browser", "chrome"))
-        return {"content": [{"type": "text", "text": f"Opened {len(urls)} tab(s) in a new {used} window."}]}
+        lcfg = cfg.get("links", {})
+        used = await asyncio.to_thread(browser.open_in_alfred_window, urls, lcfg.get("browser", "chrome"),
+                                       lcfg.get("window", "alfred"))
+        return {"content": [{"type": "text", "text": f"Opened {len(urls)} tab(s) in {used}."}]}
 
     @tool(
         "open_app",
