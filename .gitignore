@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+config.yaml
+models/*
+!models/README.md
+*.log
+alfred_workspace/
+.pytest_cache/
+*.egg-info/

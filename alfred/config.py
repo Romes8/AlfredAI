@@ -1,0 +1,68 @@
+"""Config loading: config.yaml merged over built-in defaults."""
+from __future__ import annotations
+
+import copy
+import os
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+DEFAULTS: dict[str, Any] = {
+    "name": "Alfred",
+    "agent": {
+        "model": "haiku",
+        "smart_model": "sonnet",
+        "smart_triggers": ["think hard", "think harder", "deep dive", "research", "take your time"],
+        "max_turns": 12,
+        "workspace": "./alfred_workspace",
+    },
+    "permissions": {
+        "readable_dirs": ["~/Documents"],
+        "writable_dirs": ["~/Documents/Alfred"],
+        "confirm_timeout_s": 15,
+        "deny_patterns": [".env", ".ssh", "id_rsa", "credentials", "secrets", ".aws", ".git/config"],
+    },
+    "wake": {
+        "backend": "whisper",
+        "words": ["alfred", "alfie", "al fred", "alfredo"],
+        "openwakeword_model": "./models/hey_alfred.onnx",
+        "porcupine_keyword_path": "./models/hey_alfred_windows.ppn",
+        "porcupine_access_key_env": "PICOVOICE_ACCESS_KEY",
+        "hotkey": "ctrl+alt+a",
+    },
+    "audio": {
+        "input_device": None,
+        "sample_rate": 16000,
+        "vad_aggressiveness": 2,
+        "silence_ms": 800,
+        "max_utterance_s": 20,
+    },
+    "stt": {"model": "small.en", "device": "cuda", "compute_type": "float16"},
+    "tts": {"engine": "piper", "piper_model": "./models/en_GB-alan-medium.onnx", "rate": 1.0},
+    "overlay": {"enabled": True, "position": "top-right", "width": 420, "opacity": 0.85, "hide_after_s": 12},
+    "iracing": {"enabled": True},
+    "screen": {"max_width": 1280, "jpeg_quality": 70},
+}
+
+
+def _merge(base: dict, override: dict) -> dict:
+    out = copy.deepcopy(base)
+    for k, v in (override or {}).items():
+        if isinstance(v, dict) and isinstance(out.get(k), dict):
+            out[k] = _merge(out[k], v)
+        else:
+            out[k] = v
+    return out
+
+
+def expand(p: str | os.PathLike) -> Path:
+    return Path(os.path.expandvars(os.path.expanduser(str(p)))).resolve()
+
+
+def load_config(path: str | os.PathLike | None = None) -> dict[str, Any]:
+    path = Path(path) if path else Path("config.yaml")
+    data: dict[str, Any] = {}
+    if path.exists():
+        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    return _merge(DEFAULTS, data)
