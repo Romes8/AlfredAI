@@ -116,6 +116,9 @@ alfred text      # type instead of talk
   am_echo am_onyx am_fenrir`, American female `af_heart af_bella af_nicole af_sarah af_sky af_nova af_river`.
   `engine: piper` is lighter but more robotic. `engine: pyttsx3` uses the built-in Windows voices.
 - **Speed:** `tts.rate`. 1.0 is normal, 1.1 is the default, 1.2–1.3 is brisk.
+- **Pages:** when you ask him to find something and the page is worth seeing (tickets, shops, maps, a few options),
+  he opens it in a **new Chrome window**, one tab per link. For simple facts he just answers.
+  Pages from his own web search open straight away; any other link asks for a tap first (`links.auto_open`).
 - **Apps:** "Alfred, open Spotify / Steam / VS Code". Only installed apps (from the Start menu) can be opened,
   never arbitrary commands. Set `apps.auto_open: false` to make him ask first, or `apps.enabled: false` to turn it off.
 

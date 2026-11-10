@@ -52,7 +52,10 @@ class PermissionPolicy:
         self.writable = [expand(d) for d in p["writable_dirs"]]
         self.workspace = expand(cfg["agent"]["workspace"])
         self.deny_patterns = [s.lower() for s in p["deny_patterns"]]
-        self.auto_open_links = bool(cfg.get("links", {}).get("auto_open", False))
+        # links.auto_open: "search_results" (default) = open automatically only pages that came back from his own
+        # web search this session; true = any link; false = always ask
+        self.auto_open_links = cfg.get("links", {}).get("auto_open", "search_results")
+        self.search_urls: set[str] = set()
         self.auto_open_apps = bool(cfg.get("apps", {}).get("auto_open", True))
         self.connectors = {c.prefix: c for c in conn_mod.load_connectors(cfg)}
 
@@ -90,11 +93,17 @@ class PermissionPolicy:
     # ---------- the decision ----------
     def decide(self, tool: str, args: dict[str, Any]) -> Decision:
         if tool == OPEN_URL:
-            url = str(args.get("url", ""))
-            if not re.match(r"^https?://[^\s/]+", url, flags=re.I):
-                return Decision("deny", f"Not a web link: {url[:80]}")
-            # Opening a URL can carry data out in the link itself, so it asks unless links.auto_open is on.
-            return Decision("allow" if self.auto_open_links else "ask")
+            urls = _urls(args)
+            bad = [u for u in urls if not re.match(r"^https?://[^\s/]+", u, flags=re.I)]
+            if not urls or bad:
+                return Decision("deny", f"Not a web link: {(bad or [''])[0][:80]}")
+            # A URL can smuggle data out in the link itself. Pages his own web search returned are safe to open
+            # without asking; anything else (a link he made up, or found inside a page/email) needs a tap.
+            if self.auto_open_links is True:
+                return Decision("allow")
+            if self.auto_open_links == "search_results" and all(_norm_url(u) in self.search_urls for u in urls):
+                return Decision("allow")
+            return Decision("ask")
         if tool == OPEN_APP:
             # Only installed apps by name, no arguments - low risk, so no tap needed unless apps.auto_open is off.
             return Decision("allow" if self.auto_open_apps else "ask")
@@ -142,6 +151,20 @@ class PermissionPolicy:
         return Decision("ask")
 
 
+URL_RE = re.compile(r"https?://[^\s\"'<>)\]}\\]+", re.I)
+
+
+def _norm_url(u: str) -> str:
+    return u.strip().rstrip("/.,;").lower()
+
+
+def _urls(args: dict[str, Any]) -> list[str]:
+    urls = [str(u) for u in (args.get("urls") or [])]
+    if args.get("url"):
+        urls.insert(0, str(args["url"]))
+    return [u.strip() for u in urls if str(u).strip()]
+
+
 def summarize(tool: str, args: dict[str, Any]) -> tuple[str, str]:
     """(short spoken summary, longer detail for the overlay)."""
     if tool == "Write":
@@ -162,9 +185,10 @@ def summarize(tool: str, args: dict[str, Any]) -> tuple[str, str]:
     if tool == OPEN_APP:
         return f"Want me to open {args.get('name', 'that app')}?", f"OPEN APP\n\n{args.get('name')}"
     if tool == OPEN_URL:
-        url = str(args.get("url", ""))
-        host = re.sub(r"^https?://", "", url).split("/")[0]
-        return f"Want me to open {host}?", f"OPEN IN BROWSER\n\n{url}"
+        urls = _urls(args)
+        hosts = list(dict.fromkeys(re.sub(r"^https?://", "", u).split("/")[0] for u in urls))
+        what = hosts[0] if len(hosts) == 1 else f"{len(urls)} pages"
+        return f"Want me to open {what}?", "OPEN IN NEW WINDOW\n\n" + "\n".join(urls)
     if tool == "WebFetch":
         url = str(args.get("url", ""))
         host = re.sub(r"^https?://", "", url).split("/")[0]
@@ -202,6 +226,16 @@ class PermissionGate:
                     "permissionDecisionReason": d.reason,
                 }
             }
+        return {}
+
+    async def post_tool_hook(self, input_data: dict, tool_use_id: str | None, context: Any) -> dict:  # noqa: ARG002
+        """Remember the links his web searches returned - those may be opened without a tap."""
+        if input_data.get("tool_name") == "WebSearch":
+            import json
+
+            text = json.dumps(input_data.get("tool_response"), default=str)
+            for u in URL_RE.findall(text):
+                self.policy.search_urls.add(_norm_url(u))
         return {}
 
     async def can_use_tool(self, tool: str, args: dict[str, Any], context: ToolPermissionContext):  # noqa: ARG002

@@ -54,7 +54,7 @@ DEFAULTS: dict[str, Any] = {
             "piper_model": "./models/en_GB-alan-medium.onnx"},
     "apps": {"enabled": True, "auto_open": True},
     "overlay": {"enabled": True, "glow": True, "glow_thickness": 36, "glow_intensity": 0.8, "panel": True, "position": "top-right", "width": 420, "opacity": 0.85, "hide_after_s": 12},
-    "links": {"enabled": True, "auto_open": False},
+    "links": {"enabled": True, "auto_open": "search_results", "browser": "chrome"},
     "connectors": {},
     "screen": {"enabled": True, "max_width": 1280, "jpeg_quality": 70},
 }

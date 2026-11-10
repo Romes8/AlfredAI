@@ -63,7 +63,8 @@ class Brain:
             # so no allowed_tools entry is needed (one would bypass the gate entirely).
             mcp_servers=self._servers(cfg, mcp_server),
             can_use_tool=gate.can_use_tool,
-            hooks={"PreToolUse": [HookMatcher(matcher=None, hooks=[gate.pre_tool_hook])]},
+            hooks={"PreToolUse": [HookMatcher(matcher=None, hooks=[gate.pre_tool_hook])],
+                   "PostToolUse": [HookMatcher(matcher="WebSearch", hooks=[gate.post_tool_hook])]},
             permission_mode="default",
             cwd=str(workspace),
             add_dirs=extra_dirs,

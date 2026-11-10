@@ -2,13 +2,25 @@
 from __future__ import annotations
 
 import asyncio
-import webbrowser
 from urllib.parse import urlparse
 
 from claude_agent_sdk import create_sdk_mcp_server, tool
 
 from alfred.tools import apps as apps_mod
+from alfred.tools import browser
 from alfred.tools import screen
+
+
+def url_list(args: dict) -> list[str]:
+    urls = list(args.get("urls") or [])
+    if args.get("url"):
+        urls.insert(0, args["url"])
+    seen, out = set(), []
+    for u in (str(x).strip() for x in urls):
+        if u and u not in seen:
+            seen.add(u)
+            out.append(u)
+    return out[:4]
 
 
 def build_server(cfg: dict):
@@ -39,17 +51,21 @@ def build_server(cfg: dict):
 
     @tool(
         "open_url",
-        "Open a web page in Roman's default browser so he can see it - official sites, ticket pages, maps, "
-        "videos, docs. Use it when he says 'open', 'show me', 'take me to', 'pull up', or when a link would "
-        "clearly help (offer it). Only http/https URLs. Prefer official sources you found via web search.",
-        {"type": "object", "properties": {"url": {"type": "string"}}, "required": ["url"]},
+        "Open web pages for Roman in a NEW separate browser window (one tab per link). Use it when he asks to "
+        "open / show / pull something up, or when you looked something up and the page itself is genuinely useful "
+        "to see (tickets, bookings, product pages, maps, docs, a few options to compare). Don't use it for simple "
+        "facts you can just say. Pass 1-4 of the best links, ideally exact URLs from your web search results.",
+        {"type": "object", "properties": {
+            "urls": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": 4},
+            "url": {"type": "string", "description": "single link (same as urls with one item)"},
+        }},
     )
     async def open_url(args):
-        url = str(args.get("url", "")).strip()
-        if urlparse(url).scheme not in ("http", "https"):
+        urls = url_list(args)
+        if not urls or any(urlparse(u).scheme not in ("http", "https") for u in urls):
             return {"content": [{"type": "text", "text": "Only http/https links can be opened."}], "is_error": True}
-        ok = await asyncio.to_thread(webbrowser.open, url, 2)
-        return {"content": [{"type": "text", "text": f"Opened {url}" if ok else f"Couldn't open {url}"}]}
+        used = await asyncio.to_thread(browser.open_in_new_window, urls, cfg.get("links", {}).get("browser", "chrome"))
+        return {"content": [{"type": "text", "text": f"Opened {len(urls)} tab(s) in a new {used} window."}]}
 
     @tool(
         "open_app",

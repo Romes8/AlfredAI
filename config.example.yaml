@@ -105,9 +105,11 @@ apps:
   auto_open: true             # false = he asks first (tap to approve)
 
 links:
-  enabled: true               # Alfred can open web pages in your default browser
-  auto_open: false            # false = he asks first (tap to approve). A link can carry data out, so keep false
-                              # unless you trust everything he reads.
+  enabled: true               # Alfred opens useful pages in a NEW separate window (only when it actually helps)
+  browser: chrome             # chrome (new Chrome window) or default (your default browser)
+  # search_results - open automatically if the page came from his own web search, otherwise ask (default)
+  # false          - always ask (tap)       true - never ask (a link can carry data out - not recommended)
+  auto_open: search_results
 
 screen:
   enabled: true               # false = Alfred can't take screenshots on this machine
