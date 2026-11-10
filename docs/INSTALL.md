@@ -199,6 +199,10 @@ profile:
 - Card numbers, CVV, passwords, PINs, bank/IBAN and ID numbers (CPR, passport…) are **refused**, even if you add them.
   You always type those yourself.
 
+### He talks less
+He speaks at most **2 sentences** per answer (`style.max_spoken_sentences`). The rest of a longer answer is on the overlay.
+Say "explain", "tell me more", "in detail" or "walk me through" and he says up to 8 (`style.detail_spoken_sentences`).
+
 ### Shorter approval prompts
 By default he doesn't read out links or button names when asking ("Want me to open that page?", "Want me to click that?").
 The details are on the overlay. Terminal commands are the exception: he always says those exactly, for safety.
@@ -256,6 +260,17 @@ Your claude.ai connectors are **not** picked up automatically; Alfred only uses 
    ("Want me to add "Dentist" on Thu 13 Nov at 14:00 to your calendar?").
 4. Tip: on the OAuth consent screen, click **Publish app** (no verification needed for personal use). Otherwise Google
    makes you sign in again every 7 days. To re-sign-in: `alfred connect google-calendar`.
+
+**Google Maps**
+- **Directions & showing places (free, nothing to set up):** "Directions to Tivoli by bike" or "show me Nyhavn on the map"
+  opens Google Maps in your browser straight away.
+- **Your saved places** (starred, Want to go, your lists, Home/Work). Google has no API for these, so import an export:
+  1. <https://takeout.google.com>: *Deselect all*, then tick **Saved** and **Maps (your places)**, then export and download the zip.
+  2. `.venv\Scripts\python -m alfred import-places "C:\Users\roman\Downloads\takeout-....zip"`
+  3. Ask: "what's on my Rome list?", "that bar I saved in Copenhagen?". Re-import whenever you've saved new places.
+- **Live Maps data** (places, opening hours, travel times, weather) via Google's official *Maps Grounding Lite* server:
+  `.venv\Scripts\python -m alfred connect google-maps` walks you through it. It needs **billing enabled** on the Google
+  Cloud project, so set a budget alert. It's read-only.
 
 **Any other service:** use its MCP server the same way. Local servers use `command` / `args` / `env`;
 remote servers use `url` + `headers` with a token. Remote servers that only support a browser sign-in flow

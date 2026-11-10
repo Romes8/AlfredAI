@@ -198,11 +198,19 @@ async def run_voice(cfg: dict, bus: EventBus) -> None:
             if not barged.is_set():
                 await say(sentence)
 
+    style = cfg.get("style", {})
+    spoken_count = 0
+    spoken_cap = int(style.get("max_spoken_sentences", 2))
+
     async def on_text(t: str) -> None:
+        """Every sentence goes to the overlay; only the first few are spoken (he talks less, the rest is on screen)."""
+        nonlocal spoken_count
         if barged.is_set():
             return
         bus.emit("reply", text=t)
-        await speech.put(t)
+        spoken_count += 1
+        if spoken_count <= spoken_cap:
+            await speech.put(t)
 
     try:
         while True:
@@ -228,6 +236,9 @@ async def run_voice(cfg: dict, bus: EventBus) -> None:
                 await say("Clean slate, mate.")
                 continue
             bus.state("thinking")
+            spoken_count = 0
+            wants_detail = any(w in command.lower() for w in style.get("detail_triggers", []))
+            spoken_cap = int(style.get("detail_spoken_sentences" if wants_detail else "max_spoken_sentences", 2))
             barged.clear()
             speaker.stopped.clear()
             answering.set()

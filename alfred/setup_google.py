@@ -124,3 +124,62 @@ def connect(config_path: Path, client_file: str | None = None, reauth: bool = Fa
     print("Tip: on the OAuth consent screen, 'Publish app' (no verification needed for personal use) stops Google "
           "asking you to sign in again every 7 days.")
     return 0
+
+
+MAPS_BLOCK = """  google_maps:
+    url: https://mapstools.googleapis.com/mcp
+    headers: {X-Goog-Api-Key: "${GOOGLE_MAPS_API_KEY}"}
+    mode: read_only
+    allow: [compute_routes, resolve_names, search_places, lookup_weather]
+    description: "Google Maps - find places, opening hours, routes and travel times, weather"
+"""
+
+MAPS_INSTRUCTIONS = """
+Live Google Maps uses Google's official "Maps Grounding Lite" MCP server. One time in Google Cloud:
+  1. Same project as Calendar is fine. Billing -> link a billing account (Google requires it for Maps;
+     set a budget alert, e.g. 5 EUR, under Billing -> Budgets & alerts so there are no surprises).
+  2. APIs & Services -> Library -> "Maps Grounding Lite API" -> Enable
+  3. APIs & Services -> Credentials -> Create credentials -> API key -> Edit key ->
+     API restrictions -> Restrict key -> tick "Maps Grounding Lite API" -> Save. Copy the key.
+"""
+
+
+def add_block(config_path: Path, name: str, block: str) -> str:
+    text = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
+    if re.search(rf"^\s{{2}}{name}:\s*$", text, flags=re.M):
+        return "already in config.yaml"
+    insert = "connectors:\n" + block.rstrip("\n")
+    if re.search(r"^connectors:\s*\{\s*\}\s*$", text, flags=re.M):
+        text = re.sub(r"^connectors:\s*\{\s*\}\s*$", lambda _m: insert, text, count=1, flags=re.M)
+    elif re.search(r"^connectors:\s*$", text, flags=re.M):
+        text = re.sub(r"^connectors:\s*$", lambda _m: insert, text, count=1, flags=re.M)
+    else:
+        text = text.rstrip("\n") + "\n\nconnectors:\n" + block
+    config_path.write_text(text, encoding="utf-8")
+    return "added to config.yaml"
+
+
+def save_user_env(name: str, value: str) -> None:
+    os.environ[name] = value
+    if sys.platform == "win32":
+        subprocess.run(["setx", name, value], stdout=subprocess.DEVNULL)
+    else:
+        rc = Path.home() / ".zshrc"
+        with open(rc, "a", encoding="utf-8") as f:
+            f.write(f'\nexport {name}="{value}"\n')
+
+
+def connect_maps(config_path: Path) -> int:
+    print("== Google Maps for Alfred ==")
+    if not os.environ.get("GOOGLE_MAPS_API_KEY"):
+        print(MAPS_INSTRUCTIONS)
+        key = input("Paste the API key (or press Enter to stop here): ").strip()
+        if not key:
+            return 1
+        if not re.fullmatch(r"AIza[0-9A-Za-z_\-]{35}", key):
+            print("[!] that doesn't look like a Google API key (they start with 'AIza') - saving it anyway")
+        save_user_env("GOOGLE_MAPS_API_KEY", key)
+        print("[ok] key saved as the GOOGLE_MAPS_API_KEY environment variable (not in config.yaml)")
+    print(f"[ok] connector {add_block(config_path, 'google_maps', MAPS_BLOCK)}")
+    print("\nOpen a NEW terminal, then: alfred sleep / alfred wakeup. Try: \"How long to Tivoli by bike?\"")
+    return 0
