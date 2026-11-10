@@ -5,6 +5,7 @@ One frameless, transparent, click-through, always-on-top window per monitor. It 
 from __future__ import annotations
 
 import math
+import sys
 import time
 
 from PyQt6.QtCore import QPointF, QRectF, Qt, QTimer
@@ -38,7 +39,7 @@ class _EdgeWindow(QWidget):
     def _grad(self, x1, y1, x2, y2) -> QLinearGradient:
         r, g, b = self.color
         grad = QLinearGradient(QPointF(x1, y1), QPointF(x2, y2))
-        peak = 170 * self.level * self.intensity
+        peak = 230 * self.level * self.intensity
         # smooth ease-out falloff (many stops) so there's no visible band where the glow ends
         for i in range(9):
             t = i / 8
@@ -61,7 +62,7 @@ class _EdgeWindow(QWidget):
             rg = QRadialGradient(QPointF(cx, cy), t * 2.2)
             for i in range(7):
                 k = i / 6
-                rg.setColorAt(k, QColor(r, g, b, int(70 * self.level * self.intensity * (1 - k) ** 2)))
+                rg.setColorAt(k, QColor(r, g, b, int(100 * self.level * self.intensity * (1 - k) ** 2)))
             p.setBrush(rg)
             p.drawEllipse(QPointF(cx, cy), t * 2.2, t * 2.2)
         p.end()
@@ -70,7 +71,7 @@ class _EdgeWindow(QWidget):
 class EdgeGlow:
     """Call set_active(True/False). Fades in, pulses gently while active, fades out."""
 
-    def __init__(self, thickness: int = 36, color: tuple[int, int, int] = PURPLE, intensity: float = 0.6) -> None:
+    def __init__(self, thickness: int = 36, color: tuple[int, int, int] = PURPLE, intensity: float = 0.8) -> None:
         self.windows = [_EdgeWindow(s, thickness, color, intensity) for s in QGuiApplication.screens()]
         self.active = False
         self.level = 0.0
@@ -85,6 +86,8 @@ class EdgeGlow:
             for w in self.windows:
                 w.show()
                 w.raise_()
+                if sys.platform == "darwin":
+                    _mac_above_menu_bar(w)
         self.active = active
 
     def _tick(self) -> None:
@@ -103,3 +106,33 @@ class EdgeGlow:
         for w in self.windows:
             w.level = self.level
             w.update()
+
+
+def _mac_above_menu_bar(widget: QWidget) -> None:
+    """macOS keeps normal windows below the menu bar, which hid the top edge of the glow.
+    Raise the window above the menu bar, make it cover the whole screen, and show it on every Space
+    (including fullscreen apps)."""
+    try:
+        import objc
+        from AppKit import (
+            NSScreenSaverWindowLevel,
+            NSWindowCollectionBehaviorCanJoinAllSpaces,
+            NSWindowCollectionBehaviorFullScreenAuxiliary,
+            NSWindowCollectionBehaviorStationary,
+        )
+
+        view = objc.objc_object(c_void_p=int(widget.winId()))
+        win = view.window()
+        if win is None:
+            return
+        win.setLevel_(NSScreenSaverWindowLevel)
+        win.setCollectionBehavior_(NSWindowCollectionBehaviorCanJoinAllSpaces
+                                   | NSWindowCollectionBehaviorStationary
+                                   | NSWindowCollectionBehaviorFullScreenAuxiliary)
+        win.setIgnoresMouseEvents_(True)
+        win.setHasShadow_(False)
+        screen = win.screen()
+        if screen is not None:
+            win.setFrame_display_(screen.frame(), True)  # full frame, menu bar area included
+    except Exception as e:  # never let cosmetics crash Alfred
+        print(f"[glow] couldn't lift glow above the menu bar: {e}")

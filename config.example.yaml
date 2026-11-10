@@ -69,7 +69,7 @@ overlay:
   enabled: true
   glow: true                  # purple glow around the screen edges while Alfred is listening
   glow_thickness: 36
-  glow_intensity: 0.6         # 0.1 = barely there, 1.0 = strong
+  glow_intensity: 0.8         # 0.1 = barely there, 1.0 = strong
   panel: true                 # small info panel (what he heard, his answer, permission prompts)
   position: top-right         # top-right / top-left / bottom-right / bottom-left
   width: 420

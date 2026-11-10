@@ -129,7 +129,7 @@ def run_overlay(cfg: dict, events: "queue.Queue[Event]") -> int:
     app = QApplication.instance() or QApplication([])
     o = cfg["overlay"]
     panel = Overlay(cfg) if o.get("panel", True) else None
-    glow = EdgeGlow(int(o.get("glow_thickness", 36)), intensity=float(o.get("glow_intensity", 0.6))) \
+    glow = EdgeGlow(int(o.get("glow_thickness", 36)), intensity=float(o.get("glow_intensity", 0.8))) \
         if o.get("glow", True) else None
     if panel:
         panel.show()
