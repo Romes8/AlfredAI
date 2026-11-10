@@ -240,6 +240,23 @@ Your claude.ai connectors are **not** picked up automatically; Alfred only uses 
 4. Open a new terminal, run `alfred connectors` (it should show ✓ hubspot), then `alfred sleep` and `alfred wakeup`.
 5. Ask: *"Alfred, what's the latest on the Acme deal?"*
 
+**Example: Google Calendar** (uses the open-source `@cocal/google-calendar-mcp` server)
+1. One time in Google Cloud (free, about 5 min):
+   - <https://console.cloud.google.com>: create a project (e.g. "Alfred").
+   - *APIs & Services → Library*: **Google Calendar API**, then **Enable**.
+   - *APIs & Services → OAuth consent screen*: External, app name + your email. Under *Audience / Test users*, add your Gmail.
+   - *APIs & Services → Credentials → Create credentials → OAuth client ID*: type **Desktop app**, then **Download JSON**.
+2. Run:
+   ```powershell
+   .venv\Scripts\python -m alfred connect google-calendar
+   ```
+   It picks up the `client_secret_….json` from your Downloads folder, opens Google sign-in once and adds the connector to `config.yaml`.
+3. `alfred sleep`, `alfred wakeup`. Then: *"What's on my calendar tomorrow?"*, *"Am I free Friday at 3?"*,
+   *"Put dentist on Thursday at 2pm"*. Creating, moving, deleting and answering invites asks first
+   ("Want me to add "Dentist" on Thu 13 Nov at 14:00 to your calendar?").
+4. Tip: on the OAuth consent screen, click **Publish app** (no verification needed for personal use). Otherwise Google
+   makes you sign in again every 7 days. To re-sign-in: `alfred connect google-calendar`.
+
 **Any other service:** use its MCP server the same way. Local servers use `command` / `args` / `env`;
 remote servers use `url` + `headers` with a token. Remote servers that only support a browser sign-in flow
 (OAuth) aren't supported yet, so pick a token-based option.

@@ -7,6 +7,7 @@
   alfred logs       last lines of his log
   alfred run        run in this terminal (foreground, Ctrl+C to stop)
   alfred text       type instead of talk (foreground)
+  alfred connect google-calendar   one-time Google Calendar setup (sign-in + config)
   alfred connectors which outside services (HubSpot, email, ...) Alfred can use on this machine
   alfred memory     show what Alfred remembers (alfred memory edit = open the file)
   alfred say "hi"   hear a sentence in Alfred's voice (try voices: --voice am_michael, --rate 1.2)
@@ -26,7 +27,7 @@ import traceback
 from alfred.config import load_config
 from alfred.events import EventBus
 
-COMMANDS = ("wakeup", "sleep", "toggle", "status", "logs", "run", "text", "connectors", "say", "memory")
+COMMANDS = ("wakeup", "sleep", "toggle", "status", "logs", "run", "text", "connectors", "connect", "say", "memory")
 
 
 def _find_config(explicit: str | None) -> str | None:
@@ -127,6 +128,18 @@ def main(argv: list[str] | None = None) -> None:
             print("  (empty) - say \"Alfred, remember that ...\"")
         print("Changes take effect on his next start or after you say \"new chat\".")
         return
+    if args.command == "connect":
+        what = (args.words[:1] or [""])[0].lower().replace("_", "-")
+        if what not in ("google-calendar", "gcal", "calendar"):
+            print("Usage: alfred connect google-calendar [path-to-client_secret.json]")
+            sys.exit(1)
+        from pathlib import Path
+
+        from alfred.daemon import PROJECT_ROOT
+        from alfred.setup_google import connect
+
+        cfg_path = Path(args.config or os.environ.get("ALFRED_CONFIG") or PROJECT_ROOT / "config.yaml")
+        sys.exit(connect(cfg_path, args.words[1] if len(args.words) > 1 else None))
     if args.command == "connectors":
         from alfred.connectors import describe_all
 

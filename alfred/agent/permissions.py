@@ -197,6 +197,34 @@ def _quiet(tool: str, args: dict[str, Any]) -> str | None:
     return None  # commands, file writes, connectors etc. keep their full spoken summary
 
 
+def _when(value: Any) -> str:
+    """'2026-11-14T14:00:00' -> 'Fri 14 Nov at 14:00' (best effort)."""
+    from datetime import datetime
+
+    raw = value.get("dateTime") or value.get("date") if isinstance(value, dict) else value
+    try:
+        dt = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return str(raw or "")
+    return dt.strftime("%a %d %b") + ("" if len(str(raw)) <= 10 else dt.strftime(" at %H:%M"))
+
+
+def _calendar_summary(action: str, args: dict[str, Any]) -> str:
+    title = args.get("summary") or args.get("title") or ""
+    when = _when(args.get("start")) if args.get("start") else ""
+    what = f"\"{title}\"" if title else "an event"
+    a = action.lower()
+    if a.startswith("create"):
+        return f"Want me to add {what}{' on ' + when if when else ''} to your calendar?"
+    if a.startswith("update"):
+        return f"Want me to change {what if title else 'that event'}{' to ' + when if when else ''}?"
+    if a.startswith("delete"):
+        return f"Want me to delete {what if title else 'that event'} from your calendar?"
+    if a.startswith("respond"):
+        return f"Want me to answer that invite with {args.get('response', 'a reply')}?"
+    return f"Want me to {conn_mod.pretty(action)} in your calendar?"
+
+
 URL_RE = re.compile(r"https?://[^\s\"'<>)\]}\\]+", re.I)
 
 
@@ -281,7 +309,10 @@ def summarize(tool: str, args: dict[str, Any], say_details: bool = True) -> tupl
 
         detail = json.dumps(args, indent=2, ensure_ascii=False, default=str)[:1500]
         action = re.sub(rf"^{re.escape(service)}[_\-.]+", "", short, flags=re.I)  # hubspot-create-x -> create-x
-        return f"I want to {conn_mod.pretty(action)} in {service}.", f"{service.upper()}: {short}\n\n{detail}"
+        where = service.replace("_", " ").replace("-", " ")
+        if "calendar" in where.lower() and "event" in short:
+            return _calendar_summary(action, args), f"{service.upper()}: {short}\n\n{detail}"
+        return f"I want to {conn_mod.pretty(action)} in {where}.", f"{service.upper()}: {short}\n\n{detail}"
     return f"I want to use {tool}. Yes or no?", f"{tool}\n\n{args}"
 
 
