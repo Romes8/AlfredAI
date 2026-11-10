@@ -30,6 +30,17 @@ import traceback
 from alfred.config import load_config
 from alfred.events import EventBus
 
+def force_utf8() -> None:
+    """Windows writes console/log text in its legacy code page (cp1252), which can't encode characters like
+    'ľ', 'š', 'ø' or emoji -> "'charmap' codec can't encode character". Make stdout/stderr UTF-8 everywhere."""
+    for stream in (sys.stdout, sys.stderr):
+        if stream is not None and hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(encoding="utf-8", errors="replace")
+            except (ValueError, OSError):
+                pass
+
+
 COMMANDS = ("wakeup", "sleep", "toggle", "status", "logs", "run", "text", "connectors", "connect", "import-places",
             "say", "memory", "usage")
 
@@ -86,7 +97,9 @@ def _run(args) -> None:
 
 
 def main(argv: list[str] | None = None) -> None:
-    faulthandler.enable()  # print a Python traceback if a native library crashes
+    force_utf8()
+    if sys.stderr is not None:
+        faulthandler.enable()  # print a Python traceback if a native library crashes
     parser = argparse.ArgumentParser(prog="alfred", description="Alfred - your voice buddy on Claude")
     parser.add_argument("command", nargs="?", default="run", choices=COMMANDS)
     parser.add_argument("words", nargs="*", help="text for `alfred say`")
