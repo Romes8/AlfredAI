@@ -89,7 +89,10 @@ if ($LASTEXITCODE -ne 0) { Write-Host "[!] some tests failed - Alfred may still 
 # 8) `alfred` command for every terminal
 & (Join-Path $PSScriptRoot "install_command.ps1")
 
-# 9) Start him
+# 9) Desktop / Start menu shortcuts (+ optional start at login)
+& (Join-Path $PSScriptRoot "install_shortcuts.ps1")
+
+# 10) Start him
 Write-Host "`nStarting Alfred..." -ForegroundColor Magenta
 & $vpy -m alfred wakeup
 Write-Host "`nHold RIGHT ALT and talk. In NEW terminals:  alfred status | alfred logs | alfred sleep" -ForegroundColor Green

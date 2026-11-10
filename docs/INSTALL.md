@@ -98,6 +98,16 @@ alfred run       # run in this terminal instead (Ctrl+C to stop)
 alfred text      # type instead of talk
 ```
 
+### 7b. Shortcuts (no terminal needed)
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\install_shortcuts.ps1
+```
+- **Alfred** on your Desktop and in the Start menu: click once to wake him up, click again to put him to sleep.
+  No console window appears. He says "online" when he's up, and a small notification confirms when he's asleep.
+- **Ctrl+Alt+A** does the same from anywhere (pass `-Hotkey "Ctrl+Shift+F12"` to pick another).
+- The script asks whether he should **start automatically when you log in** (`-Startup` / `-NoStartup` to skip the question).
+- `alfred toggle` is the same thing from a terminal.
+
 ### 8. Use him
 - **Hold right Alt**, talk, let go. The screen edges glow purple while he's listening.
 - Hold right Alt while he's talking to **cut him off** and ask something else.

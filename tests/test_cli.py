@@ -75,3 +75,21 @@ def test_brain_pipes_cli_stderr_instead_of_inheriting():
 
     b = Brain(cfg, PermissionGate(PermissionPolicy(cfg), ask), None, [])
     assert callable(b.options.stderr)
+
+
+def test_toggle_wakes_then_sleeps(state, monkeypatch):
+    calls = []
+    monkeypatch.setattr(daemon, "_notify", lambda *a: calls.append("notify"))
+    monkeypatch.setattr(daemon, "wakeup", lambda extra: calls.append("wakeup") or 0)
+    monkeypatch.setattr(daemon, "running_pid", lambda: None)
+    assert daemon.toggle([]) == 0 and calls == ["wakeup"]
+    monkeypatch.setattr(daemon, "running_pid", lambda: 123)
+    monkeypatch.setattr(daemon, "sleep", lambda: calls.append("sleep") or 0)
+    assert daemon.toggle([]) == 0 and calls[-2:] == ["sleep", "notify"]
+
+
+def test_icon(tmp_path):
+    from alfred.icon import make_icon
+
+    p = make_icon(tmp_path / "a.ico")
+    assert p.exists() and p.stat().st_size > 1000
