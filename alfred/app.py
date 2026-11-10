@@ -81,7 +81,7 @@ async def run_voice(cfg: dict, bus: EventBus) -> None:
         if audio is None:
             return ""
         try:
-            return await transcribe(audio)
+            return (await asyncio.to_thread(stt.transcribe, audio)).strip()
         except Exception as e:  # noqa: BLE001
             print(f"[{name}] speech-to-text error: {e}", flush=True)
             bus.emit("error", text=f"speech-to-text: {e}")
