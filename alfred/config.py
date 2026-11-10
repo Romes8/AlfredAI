@@ -55,6 +55,8 @@ DEFAULTS: dict[str, Any] = {
     "apps": {"enabled": True, "auto_open": True},
     "memory": {"enabled": True, "path": None, "confirm": False},
     "windows": {"enabled": True},
+    "approvals": {"say_details": False},
+    "profile": {},
     "browser_control": {"enabled": False, "browser": "chrome", "use_my_chrome": False, "profile_dir": None,
                         "on_type": "ask", "on_risky_click": "ask", "allow_uploads": False},
     "commands": {"enabled": False, "on_read_file": "ask", "on_change": "ask", "on_delete": "ask",

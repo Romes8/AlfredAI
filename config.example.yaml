@@ -131,6 +131,24 @@ browser_control:
   on_risky_click: ask         # buy / pay / send / delete buttons: ask | deny
   allow_uploads: false        # uploading files from this computer (asks when true)
 
+approvals:
+  say_details: false          # false = short prompts ("Want me to open that page?"); details stay on the overlay.
+                              # Terminal commands are always read out in full.
+
+# Your details for filling in forms - Alfred grabs them from here instead of asking. Only sent to Claude when he
+# actually fills something in. Card numbers, passwords, PINs, bank and ID numbers are refused - type those yourself.
+profile: {}
+#  name: Roman Zvoda
+#  email: you@example.com
+#  phone: "+45 12 34 56 78"
+#  birthday: "1998-01-01"
+#  address:
+#    street: Example Street 1
+#    postal_code: "2100"
+#    city: Copenhagen
+#    country: Denmark
+#  company: ""
+
 apps:
   enabled: true               # "Alfred, open Spotify" - installed apps only, no commands
   auto_open: true             # false = he asks first (tap to approve)
