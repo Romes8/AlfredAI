@@ -71,3 +71,32 @@ def test_server_config(tmp_path):
     assert s["command"] == "npx" and "@playwright/mcp@latest" in s["args"] and "--user-data-dir" in s["args"]
     cfg["browser_control"]["use_my_chrome"] = True
     assert "--extension" in bc.server_config(cfg)["args"]
+
+
+def test_checkout_style_labels_ask(policy):
+    for label in ["Continue to payment", "Proceed", "Complete purchase", "Add to cart", "Go to checkout", "Yes"]:
+        assert act(policy, "browser_click", element=label, target="e1") == "ask", label
+
+
+def test_every_click_asks_on_payment_pages(policy, monkeypatch):
+    import asyncio
+
+    from alfred.agent.permissions import PermissionGate
+
+    async def ask(s, d):
+        return False
+
+    gate = PermissionGate(policy, ask)
+    monkeypatch.setattr(bc.page, "url", "")
+    assert act(policy, "browser_click", element="Next", target="e1") == "allow"
+    asyncio.run(gate.post_tool_hook({"tool_name": "mcp__browser__browser_navigate",
+                                     "tool_response": "### Page state\n- Page URL: https://shop.example/checkout/step-2\n"},
+                                    None, None))
+    assert bc.page.sensitive()
+    assert act(policy, "browser_click", element="Next", target="e1") == "ask"
+    assert act(policy, "browser_press_key", key="ArrowDown") == "ask"
+    assert "payment or account page" in summarize("mcp__browser__browser_click", {"element": "Next"})[0]
+    asyncio.run(gate.post_tool_hook({"tool_name": "mcp__browser__browser_navigate",
+                                     "tool_response": "- Page URL: https://www.youtube.com/watch?v=abc"}, None, None))
+    assert act(policy, "browser_click", element="Next", target="e1") == "allow"
+    bc.page.url = ""

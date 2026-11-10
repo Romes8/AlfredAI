@@ -64,7 +64,7 @@ class Brain:
             mcp_servers=self._servers(cfg, mcp_server),
             can_use_tool=gate.can_use_tool,
             hooks={"PreToolUse": [HookMatcher(matcher=None, hooks=[gate.pre_tool_hook])],
-                   "PostToolUse": [HookMatcher(matcher="WebSearch", hooks=[gate.post_tool_hook])]},
+                   "PostToolUse": [HookMatcher(matcher="WebSearch|mcp__browser__.*", hooks=[gate.post_tool_hook])]},
             permission_mode="default",
             cwd=str(workspace),
             add_dirs=extra_dirs,
