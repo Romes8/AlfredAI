@@ -7,6 +7,18 @@ It takes about 15 minutes. At the end you type `alfred wakeup` in any terminal, 
 
 ## Windows
 
+### Fast path (one command)
+Install **Python 3.11+** (tick "Add python.exe to PATH"), **Node.js 18+** and **Git**, open a **new** PowerShell, then:
+```powershell
+cd $HOME\Documents
+git clone https://github.com/Romes8/AlfredAI.git
+cd AlfredAI
+powershell -ExecutionPolicy Bypass -File scripts\setup_windows.ps1
+```
+The script sets up the venv and packages (plus GPU speech-to-text if you have an NVIDIA card), the Claude CLI and login
+(a browser opens; paste the token back), the voice, a `config.yaml` for this PC, the tests, and the `alfred` command.
+Then it **starts Alfred**. Hold right Alt and talk. The step-by-step version of the same thing is below.
+
 ### 1. Prerequisites (one time)
 | What | Where | Note |
 |---|---|---|
