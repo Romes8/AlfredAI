@@ -107,8 +107,12 @@ async def run_voice(cfg: dict, bus: EventBus) -> None:
     brain = Brain(cfg, gate, server, names, bus)
     await brain.start()
 
-    hint = f"say \"{name}\"" if cfg["wake"]["backend"] == "whisper" else "say \"Hey " + name + "\""
-    print(f"[{name}] online - {hint} or press {cfg['wake'].get('hotkey')}")
+    import sys
+
+    key = "right Option" if sys.platform == "darwin" else "right Alt"
+    backend = cfg["wake"]["backend"]
+    hint = f"tap {key}" + ("" if backend == "none" else f" or say \"{name}\"")
+    print(f"[{name}] online - {hint}. The screen edge glows purple while I'm listening.")
     await say(f"{name}'s online. What's good?")
 
     async def on_text(t: str) -> None:
@@ -121,9 +125,7 @@ async def run_voice(cfg: dict, bus: EventBus) -> None:
             woke = await asyncio.to_thread(wake.wait)
             command = woke.command
             if not command:
-                bus.state("listening")
-                await say("Yeah?")
-                command = await listen(6)
+                command = await listen(6)  # purple edge glow = listening, no need to talk
             if not command:
                 continue
             bus.emit("heard", text=command)

@@ -28,6 +28,7 @@ class Microphone:
         self.max_frames = int(a["max_utterance_s"] * 1000 / FRAME_MS)
         self.vad = webrtcvad.Vad(int(a["vad_aggressiveness"]))
         self.muted = threading.Event()
+        self.interrupt = threading.Event()  # set by the trigger key to abort a recording in progress
         self._frames: queue.Queue[bytes] = queue.Queue(maxsize=2000)
         self._stream = sd.RawInputStream(
             samplerate=self.sr,
@@ -74,12 +75,16 @@ class Microphone:
 
         start_timeout_s: give up (return None) if no speech starts within this many seconds.
         """
+        self.interrupt.clear()
         pre_roll: collections.deque[bytes] = collections.deque(maxlen=10)  # keep ~300 ms before speech
         voiced: list[bytes] = []
         speaking = False
         silent = 0
         t0 = time.monotonic()
         while True:
+            if self.interrupt.is_set():
+                self.interrupt.clear()
+                return None
             try:
                 frame = self._frames.get(timeout=0.5)
             except queue.Empty:

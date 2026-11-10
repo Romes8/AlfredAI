@@ -23,6 +23,11 @@ permissions:
   deny_patterns: [".env", ".ssh", "id_rsa", "credentials", "secrets", ".aws", ".git/config"]
 
 wake:
+  # How you summon Alfred:
+  #  1) tap the trigger key - RIGHT ALT on Windows, RIGHT OPTION on macOS (AltGr combos like AltGr+2 are ignored)
+  #  2) optionally say his name - pick a wake word backend below, or `none` for key-only
+  trigger_key: right_alt      # right_alt (= right Option on Mac) / right_ctrl / right_cmd / f13
+  # none        - key only, no always-on listening (lightest)
   # whisper     - no setup: listens for speech and checks whether you said "Alfred" (uses the GPU)
   # openwakeword - lighter: needs a custom "hey alfred" .onnx model (see README)
   # porcupine   - lightest: needs a custom "Hey Alfred" .ppn file + free Picovoice access key
@@ -31,7 +36,6 @@ wake:
   openwakeword_model: ./models/hey_alfred.onnx
   porcupine_keyword_path: ./models/hey_alfred_windows.ppn
   porcupine_access_key_env: PICOVOICE_ACCESS_KEY
-  hotkey: "ctrl+alt+a"        # push-to-talk fallback, works with any backend
 
 audio:
   input_device: null          # null = system default mic; or a device name/index
@@ -52,6 +56,9 @@ tts:
 
 overlay:
   enabled: true
+  glow: true                  # purple glow around the screen edges while Alfred is listening
+  glow_thickness: 36
+  panel: true                 # small info panel (what he heard, his answer, permission prompts)
   position: top-right         # top-right / top-left / bottom-right / bottom-left
   width: 420
   opacity: 0.85

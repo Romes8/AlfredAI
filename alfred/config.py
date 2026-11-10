@@ -29,7 +29,7 @@ DEFAULTS: dict[str, Any] = {
         "openwakeword_model": "./models/hey_alfred.onnx",
         "porcupine_keyword_path": "./models/hey_alfred_windows.ppn",
         "porcupine_access_key_env": "PICOVOICE_ACCESS_KEY",
-        "hotkey": "ctrl+alt+a",
+        "trigger_key": "right_alt",
     },
     "audio": {
         "input_device": None,
@@ -40,7 +40,7 @@ DEFAULTS: dict[str, Any] = {
     },
     "stt": {"model": "small.en", "device": "cuda", "compute_type": "float16"},
     "tts": {"engine": "piper", "piper_model": "./models/en_GB-alan-medium.onnx", "rate": 1.0},
-    "overlay": {"enabled": True, "position": "top-right", "width": 420, "opacity": 0.85, "hide_after_s": 12},
+    "overlay": {"enabled": True, "glow": True, "glow_thickness": 36, "panel": True, "position": "top-right", "width": 420, "opacity": 0.85, "hide_after_s": 12},
     "screen": {"max_width": 1280, "jpeg_quality": 70},
 }
 

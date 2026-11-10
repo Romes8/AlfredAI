@@ -11,6 +11,9 @@ from PyQt6.QtGui import QGuiApplication
 from PyQt6.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget
 
 from alfred.events import Event
+from alfred.overlay.glow import EdgeGlow
+
+GLOW_STATES = {"listening", "waiting_confirm"}  # purple edge = Alfred is actively listening to you
 
 STATE_STYLE = {
     "idle": ("#6b7280", "Chillin'"),
@@ -22,11 +25,10 @@ STATE_STYLE = {
 
 
 class Overlay(QWidget):
-    def __init__(self, cfg: dict, events: "queue.Queue[Event]") -> None:
+    def __init__(self, cfg: dict) -> None:
         super().__init__()
         self.cfg = cfg["overlay"]
         self.name = cfg["name"]
-        self.events = events
         self.last_activity = time.monotonic()
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint
@@ -72,9 +74,6 @@ class Overlay(QWidget):
 
         self._set_state("idle")
         self._place()
-        timer = QTimer(self)
-        timer.timeout.connect(self._drain)
-        timer.start(50)
 
     def _place(self) -> None:
         self.adjustSize()
@@ -92,37 +91,31 @@ class Overlay(QWidget):
             self.last_activity = time.monotonic()
             self.show()
 
-    def _drain(self) -> None:
-        changed = False
-        while True:
-            try:
-                ev = self.events.get_nowait()
-            except queue.Empty:
-                break
-            changed = True
-            d = ev.data
-            if ev.kind == "state":
-                self._set_state(d["value"])
-            elif ev.kind == "heard":
-                self.heard.setText(f"You: {d['text']}")
-                self.reply.setText("")
-                self.perm.hide()
-            elif ev.kind == "reply":
-                prev = self.reply.text()
-                self.reply.setText((prev + " " + d["text"]).strip())
-            elif ev.kind == "tool":
-                self.heard.setText(self.heard.text().split("  ·")[0] + f"  · using {d['name'].split('__')[-1]}")
-            elif ev.kind == "permission":
-                res = d.get("result")
-                if res == "pending":
-                    self.perm.setText(f"{d.get('summary', '')}\n\n{d.get('detail', '')[:900]}")
-                    self.perm.show()
-                else:
-                    self.perm.setText(f"{d.get('summary', '')} → {res}")
-            elif ev.kind == "error":
-                self.reply.setText(f"Error: {d['text']}")
-        if changed:
-            self._place()
+    def handle(self, ev: Event) -> None:
+        d = ev.data
+        if ev.kind == "state":
+            self._set_state(d["value"])
+        elif ev.kind == "heard":
+            self.heard.setText(f"You: {d['text']}")
+            self.reply.setText("")
+            self.perm.hide()
+        elif ev.kind == "reply":
+            prev = self.reply.text()
+            self.reply.setText((prev + " " + d["text"]).strip())
+        elif ev.kind == "tool":
+            self.heard.setText(self.heard.text().split("  ·")[0] + f"  · using {d['name'].split('__')[-1]}")
+        elif ev.kind == "permission":
+            res = d.get("result")
+            if res == "pending":
+                self.perm.setText(f"{d.get('summary', '')}\n\n{d.get('detail', '')[:900]}")
+                self.perm.show()
+            else:
+                self.perm.setText(f"{d.get('summary', '')} → {res}")
+        elif ev.kind == "error":
+            self.reply.setText(f"Error: {d['text']}")
+        self._place()
+
+    def tick(self) -> None:
         hide_after = float(self.cfg["hide_after_s"])
         if hide_after and self.isVisible() and time.monotonic() - self.last_activity > hide_after:
             if self.status.text().find("Chillin") != -1:
@@ -130,7 +123,28 @@ class Overlay(QWidget):
 
 
 def run_overlay(cfg: dict, events: "queue.Queue[Event]") -> int:
+    """Qt main loop: the info panel and/or the purple listening glow, fed from Alfred's event bus."""
     app = QApplication.instance() or QApplication([])
-    ov = Overlay(cfg, events)
-    ov.show()
+    o = cfg["overlay"]
+    panel = Overlay(cfg) if o.get("panel", True) else None
+    glow = EdgeGlow(int(o.get("glow_thickness", 36))) if o.get("glow", True) else None
+    if panel:
+        panel.show()
+
+    def drain() -> None:
+        while True:
+            try:
+                ev = events.get_nowait()
+            except queue.Empty:
+                break
+            if glow and ev.kind == "state":
+                glow.set_active(ev.data["value"] in GLOW_STATES)
+            if panel:
+                panel.handle(ev)
+        if panel:
+            panel.tick()
+
+    timer = QTimer()
+    timer.timeout.connect(drain)
+    timer.start(30)
     return app.exec()

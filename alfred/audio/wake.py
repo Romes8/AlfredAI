@@ -5,7 +5,8 @@ Backends
                  works in ONE breath - the text after the wake word is used as the command.
 - openwakeword:  custom "hey alfred" .onnx model, very light on CPU.
 - porcupine:     custom "Hey Alfred" .ppn from the Picovoice console, lightest.
-A push-to-talk hotkey works alongside any backend.
+- none:          no wake word - only the trigger key.
+The trigger key (right Alt on Windows / right Option on macOS) works with every backend.
 """
 from __future__ import annotations
 
@@ -48,7 +49,7 @@ class WakeListener:
         self.backend = w["backend"]
         self.words = w["words"]
         self.hotkey_pressed = threading.Event()
-        self._setup_hotkey(w.get("hotkey"))
+        self._setup_trigger_key(w.get("trigger_key"))
         self._oww = None
         self._porcupine = None
         if self.backend == "openwakeword":
@@ -63,26 +64,34 @@ class WakeListener:
                 keyword_paths=[w["porcupine_keyword_path"]],
             )
 
-    def _setup_hotkey(self, combo: str | None) -> None:
-        if not combo:
+    def _setup_trigger_key(self, trigger: str | None) -> None:
+        if not trigger:
             return
-        try:
-            import keyboard
+        from alfred.audio.hotkey import TriggerKey
 
-            keyboard.add_hotkey(combo, self.hotkey_pressed.set)
-        except Exception as e:  # needs admin on some systems / not available on Linux without root
-            print(f"[wake] hotkey disabled: {e}")
+        def fire() -> None:
+            self.hotkey_pressed.set()
+            self.mic.interrupt.set()  # cut off whatever the wake-word listener was recording
+
+        self._trigger = TriggerKey(trigger, fire)
+        self._trigger.start()
 
     def wait(self) -> WakeResult:
         """Block until Alfred is summoned."""
         if self.backend == "whisper":
             return self._wait_whisper()
+        if self.backend == "none":
+            self.hotkey_pressed.wait()
+            self.hotkey_pressed.clear()
+            self.mic.flush()
+            return WakeResult()
         return self._wait_frames()
 
     def _wait_whisper(self) -> WakeResult:
         while True:
             if self.hotkey_pressed.is_set():
                 self.hotkey_pressed.clear()
+                self.mic.flush()
                 return WakeResult()
             audio = self.mic.record_utterance(start_timeout_s=0.5)
             if audio is None:
