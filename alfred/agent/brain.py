@@ -29,11 +29,9 @@ def wants_smart_model(text: str, triggers: list[str]) -> bool:
 
 
 class Brain:
-    def __init__(self, cfg: dict, gate: PermissionGate, mcp_server, mcp_tool_names: list[str], bus=None,
-                 racing_check: Callable[[], bool] | None = None) -> None:
+    def __init__(self, cfg: dict, gate: PermissionGate, mcp_server, mcp_tool_names: list[str], bus=None) -> None:
         self.cfg = cfg
         self.bus = bus
-        self.racing_check = racing_check
         a = cfg["agent"]
         self.model = a["model"]
         self.smart_model = a["smart_model"]
@@ -84,8 +82,6 @@ class Brain:
         if smart:
             await self.client.set_model(self.smart_model)
         prompt = text
-        if self.racing_check and self.racing_check():
-            prompt = f"[Roman is on track in iRacing right now - answer in a few words]\n{text}"
         full: list[str] = []
         try:
             await self.client.query(prompt)

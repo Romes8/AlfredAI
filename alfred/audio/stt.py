@@ -4,7 +4,7 @@ from __future__ import annotations
 import numpy as np
 
 # Words whisper often gets wrong in Roman's world - nudges recognition.
-HOTWORDS = "Alfred, iRacing, lap, fuel, pit, Spa, Monza, Nordschleife, delta, GEOScan, Claude"
+HOTWORDS = "Alfred, Claude, GEOScan, screenshot"
 
 
 class Transcriber:

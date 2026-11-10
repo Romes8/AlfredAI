@@ -1,6 +1,6 @@
 """Alfred's permission model.
 
-  auto   - Read / Glob / Grep inside readable_dirs, web search, Alfred's own tools (iRacing, screen)
+  auto   - Read / Glob / Grep inside readable_dirs, web search, Alfred's own tools (screen)
   ask    - Write / Edit / Bash -> Roman confirms out loud (or types y/n in text mode)
   deny   - anything outside the allowed folders, secrets files, destructive commands
 

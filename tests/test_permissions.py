@@ -58,7 +58,7 @@ def test_bash_asks_and_destructive_denied(policy):
 
 def test_web_and_alfred_tools_allowed(policy):
     assert policy.decide("WebSearch", {"query": "f1"}).action == "allow"
-    assert policy.decide("mcp__alfred__get_race_data", {}).action == "allow"
+    assert policy.decide("mcp__alfred__look_at_screen", {}).action == "allow"
 
 
 def test_unknown_tool_asks(policy):

@@ -19,16 +19,6 @@ def _is(text: str, phrases: tuple[str, ...]) -> bool:
     return any(t == p or t.startswith(p) for p in phrases)
 
 
-def _make_iracing(cfg: dict):
-    if not cfg["iracing"]["enabled"]:
-        return None
-    from alfred.tools.iracing import IRacing
-
-    ir = IRacing()
-    ir.start_poller()
-    return ir
-
-
 # --------------------------------------------------------------------------- text mode
 async def run_text(cfg: dict, bus: EventBus | None = None) -> None:
     """Keyboard chat - handy for testing without a mic."""
@@ -39,10 +29,9 @@ async def run_text(cfg: dict, bus: EventBus | None = None) -> None:
         ans = await asyncio.to_thread(input, "Approve? (y/n) > ")
         return ans.strip().lower() in ("y", "yes")
 
-    iracing = _make_iracing(cfg)
     gate = PermissionGate(PermissionPolicy(cfg), ask, bus)
-    server, names = build_server(cfg, iracing)
-    brain = Brain(cfg, gate, server, names, bus, racing_check=iracing.is_racing if iracing else None)
+    server, names = build_server(cfg)
+    brain = Brain(cfg, gate, server, names, bus)
     await brain.start()
     print(f"{cfg['name']} is online (text mode). Type 'exit' to quit, 'new chat' to reset.\n")
 
@@ -113,10 +102,9 @@ async def run_voice(cfg: dict, bus: EventBus) -> None:
         await say("I'll take that as a no.")
         return False
 
-    iracing = _make_iracing(cfg)
     gate = PermissionGate(PermissionPolicy(cfg), ask, bus)
-    server, names = build_server(cfg, iracing)
-    brain = Brain(cfg, gate, server, names, bus, racing_check=iracing.is_racing if iracing else None)
+    server, names = build_server(cfg)
+    brain = Brain(cfg, gate, server, names, bus)
     await brain.start()
 
     hint = f"say \"{name}\"" if cfg["wake"]["backend"] == "whisper" else "say \"Hey " + name + "\""

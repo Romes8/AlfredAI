@@ -1,13 +1,12 @@
 # Alfred
 
-Your voice-first buddy on top of Claude. Say **"Alfred, what's my fastest lap?"** mid-race and he tells you, without you leaving iRacing.
+Your voice-first buddy on top of Claude. Ask about **anything you see or want to know**, like "Alfred, what's this error?", "who's this player?" or "how do I get past this boss?", and he looks at your screen, searches the web if he needs to, and tells you. You never have to leave what you're doing.
 
 - **Wake word:** "Alfred" (or push-to-talk `Ctrl+Alt+A`). You can say the question in the same breath.
 - **Runs on your Claude subscription** through the Claude Agent SDK, with Haiku by default. Say "think hard" or "research" to switch to Sonnet for that one question.
 - **Read-only by default.** He reads files in folders you allow. Any write, edit or command makes him ask out loud, and nothing happens until you say "yes".
-- **Sees your screen** only when you ask about something on screen.
-- **iRacing telemetry:** best, last and every lap, position, delta, incidents, fuel per lap and laps of fuel left.
-- **Web search** for anything current.
+- **Sees your screen:** when your question is about something you're looking at, he takes a screenshot (one monitor, the active window or all monitors) and answers from what he sees. He only does this when you ask.
+- **Web search** for anything current. He can combine it with the screen: look first, then search for what's on it.
 - **Overlay:** a small always-on-top, click-through panel showing what he heard, his answer and permission prompts.
 - **Buddy personality:** casual, a bit of slang, short spoken answers. Edit `alfred/persona.py` to change it.
 
@@ -17,7 +16,7 @@ Your voice-first buddy on top of Claude. Say **"Alfred, what's my fastest lap?"*
                          permission gate (hook + can_use_tool)
                      read: auto · write/run: asks you · secrets/outside: blocked
                                      │
-            Files · Web search · look_at_screen · iRacing (pyirsdk)
+                 Files · Web search · look_at_screen
 ```
 
 ## Setup (Windows)
@@ -49,10 +48,10 @@ Your voice-first buddy on top of Claude. Say **"Alfred, what's my fastest lap?"*
    python -m alfred            # the real thing: voice + overlay
    ```
 
-### iRacing
-- Run the sim in **borderless windowed** mode, because exclusive fullscreen hides every overlay.
-- Telemetry comes from iRacing's official shared-memory SDK (read-only). Nothing is injected into the game.
-- Try: "Alfred, fastest lap?", "how much fuel left?", "how many laps can I do?", "what was my last five average?"
+### Games and fullscreen apps
+- Run games in **borderless windowed** mode. Exclusive fullscreen hides every overlay, and some games also block screenshots in that mode.
+- Nothing is injected into the game. Alfred just takes a normal screenshot when you ask.
+- Try: "Alfred, what's this?", "what does this error mean?", "who's the guy on screen?", "is this a good deal?"
 
 ### Spoken commands
 - **"yes" / "nah" / "show me"** when he asks for permission. Silence or anything unclear counts as no.
@@ -74,7 +73,7 @@ alfred/
   agent/brain.py     Claude Agent SDK session, model routing
   agent/permissions.py   read / ask / deny policy, hook + can_use_tool
   audio/             mic + VAD, wake word, faster-whisper, Piper TTS, yes/no parsing
-  tools/             iRacing telemetry, screenshots, MCP server
+  tools/             screenshots, MCP server
   overlay/           PyQt6 overlay
 tests/               pytest -q
 ```

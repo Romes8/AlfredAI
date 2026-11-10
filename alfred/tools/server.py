@@ -2,28 +2,25 @@
 from __future__ import annotations
 
 import asyncio
-import json
 
 from claude_agent_sdk import create_sdk_mcp_server, tool
 
 from alfred.tools import screen
-from alfred.tools.iracing import IRacing
 
 
-def _text(obj) -> dict:
-    return {"content": [{"type": "text", "text": json.dumps(obj, ensure_ascii=False)}]}
-
-
-def build_server(cfg: dict, iracing: IRacing | None):
+def build_server(cfg: dict):
     scfg = cfg["screen"]
 
     @tool(
         "look_at_screen",
-        "Take a screenshot so you can see what Roman sees. Use only when the question is about something "
-        "visible on screen. target='window' captures just the active window, 'screen' the whole monitor.",
+        "Take a screenshot so you can see exactly what Roman sees right now - any app, game, video, page, "
+        "error or document. Use it whenever his question is about something he's looking at, or uses words "
+        "like 'this', 'that', 'here', 'on my screen'. "
+        "target: 'screen' = one whole monitor (default), 'window' = only the active window (sharper detail), "
+        "'all' = every monitor side by side.",
         {"type": "object", "properties": {
-            "target": {"type": "string", "enum": ["screen", "window"], "default": "screen"},
-            "monitor": {"type": "integer", "default": 1, "description": "1 = primary monitor"},
+            "target": {"type": "string", "enum": ["screen", "window", "all"], "default": "screen"},
+            "monitor": {"type": "integer", "default": 1, "description": "1 = primary monitor, 2 = second..."},
         }},
     )
     async def look_at_screen(args):
@@ -36,28 +33,5 @@ def build_server(cfg: dict, iracing: IRacing | None):
             {"type": "text", "text": desc},
         ]}
 
-    @tool(
-        "get_race_data",
-        "Live iRacing telemetry: best lap, last lap, current lap, position, class position, delta to best, "
-        "incidents, fuel (litres, %, per lap, laps left), session type, track, time remaining. "
-        "ALWAYS use this for questions about the current race.",
-        {"type": "object", "properties": {}},
-    )
-    async def get_race_data(args):  # noqa: ARG001
-        if iracing is None:
-            return _text({"connected": False, "message": "iRacing support is disabled in config."})
-        return _text(await asyncio.to_thread(iracing.snapshot))
-
-    @tool(
-        "get_session_laps",
-        "All laps Roman completed this iRacing session with times and fuel used, plus best lap and "
-        "average of the last 5. Use for pace / consistency / 'what was lap N' questions.",
-        {"type": "object", "properties": {}},
-    )
-    async def get_session_laps(args):  # noqa: ARG001
-        if iracing is None:
-            return _text({"laps": [], "message": "iRacing support is disabled in config."})
-        return _text(await asyncio.to_thread(iracing.laps))
-
-    tools = [look_at_screen, get_race_data, get_session_laps]
-    return create_sdk_mcp_server(name="alfred", version="0.1.0", tools=tools), [f"mcp__alfred__{t.name}" for t in tools]
+    tools = [look_at_screen]
+    return create_sdk_mcp_server(name="alfred", version="0.2.0", tools=tools), [f"mcp__alfred__{t.name}" for t in tools]

@@ -27,12 +27,15 @@ def _foreground_window_rect() -> dict | None:
 
 
 def capture(target: str = "screen", monitor: int = 1, max_width: int = 1280, quality: int = 70) -> tuple[str, str]:
-    """Return (base64 jpeg, description). target: 'screen' (one monitor) or 'window' (active window)."""
+    """Return (base64 jpeg, description). target: 'screen' (one monitor), 'window' (active window), 'all'."""
     import mss
     from PIL import Image
 
     with mss.mss() as sct:
         region = _foreground_window_rect() if target == "window" else None
+        if target == "all":
+            region = sct.monitors[0]  # bounding box of every monitor
+            max_width = max(max_width, 1920)
         if region is None:
             mons = sct.monitors
             region = mons[monitor] if 0 < monitor < len(mons) else mons[1]

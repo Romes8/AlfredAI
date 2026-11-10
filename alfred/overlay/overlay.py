@@ -1,4 +1,4 @@
-"""Always-on-top, click-through overlay. Works over iRacing in *borderless windowed* mode
+"""Always-on-top, click-through overlay. Works over games in *borderless windowed* mode
 (exclusive fullscreen hides every overlay - that's Windows, not us). Never takes focus, never injects into the game.
 """
 from __future__ import annotations

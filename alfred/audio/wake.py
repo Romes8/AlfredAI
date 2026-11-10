@@ -1,7 +1,7 @@
 """Wake word detection.
 
 Backends
-- whisper:       transcribe each phrase and look for "Alfred". Zero setup. Bonus: "Alfred, what's my best lap?"
+- whisper:       transcribe each phrase and look for "Alfred". Zero setup. Bonus: "Alfred, what's this on my screen?"
                  works in ONE breath - the text after the wake word is used as the command.
 - openwakeword:  custom "hey alfred" .onnx model, very light on CPU.
 - porcupine:     custom "Hey Alfred" .ppn from the Picovoice console, lightest.
