@@ -29,7 +29,9 @@ Your voice-first buddy on top of Claude. Ask about **anything you see or want to
 
 **Full step-by-step guide: [docs/INSTALL.md](docs/INSTALL.md)** (Windows first, then macOS, updating, troubleshooting).
 
-Quick version (Windows):
+Quickest (Windows): clone, then `powershell -ExecutionPolicy Bypass -File scripts\setup_windows.ps1`. It installs everything and starts him.
+
+Manual quick version (Windows):
 ```powershell
 npm install -g @anthropic-ai/claude-code; claude setup-token      # then: setx CLAUDE_CODE_OAUTH_TOKEN "<token>"
 git clone https://github.com/Romes8/AlfredAI.git; cd AlfredAI
