@@ -18,7 +18,7 @@ permissions:
     - "~/Projects"
   # Folders Alfred may WRITE to - and only after you say yes.
   writable_dirs:
-    - "~/Documents/Alfred"
+    - "~/Documents/Personal/Alfred"
   confirm_timeout_s: 15
   deny_patterns: [".env", ".ssh", "id_rsa", "credentials", "secrets", ".aws", ".git/config"]
 
