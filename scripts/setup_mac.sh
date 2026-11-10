@@ -4,14 +4,10 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 echo "== Alfred setup (macOS) =="
 
-# 1) GitHub: use the Romes8 account for this repo
-if command -v gh >/dev/null 2>&1; then
-  gh auth switch --hostname github.com --user Romes8 >/dev/null 2>&1 \
-    && echo "[ok] gh switched to Romes8" \
-    || echo "[!] gh: Romes8 isn't logged in - run: gh auth login (as Romes8)"
-fi
+# 1) GitHub: this repo always uses the Romes8 account (repo-local only - your other account is untouched)
+git remote set-url origin https://Romes8@github.com/Romes8/AlfredAI.git
 git config credential.https://github.com.username Romes8
-echo "[ok] this repo pushes as Romes8"
+echo "[ok] this repo pushes as Romes8 (global gh/git accounts unchanged)"
 
 # 2) Python 3.11+
 PY=""
