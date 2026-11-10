@@ -18,6 +18,7 @@ import faulthandler
 import os
 import sys
 import threading
+import traceback
 
 from alfred.config import load_config
 from alfred.events import EventBus
@@ -59,8 +60,17 @@ def _run(args) -> None:
             print("[alfred] PyQt6 not installed - running without overlay (pip install PyQt6)")
         else:
             events = bus.subscribe()
+
+            def core() -> None:
+                try:
+                    asyncio.run(run_voice(cfg, bus))
+                except BaseException:  # noqa: BLE001
+                    traceback.print_exc()
+                    print("[alfred] crashed - shutting down", flush=True)
+                    os._exit(1)  # don't leave the overlay running with no Alfred behind it
+
             # Qt must own the main thread; Alfred's brain + audio run in a worker thread.
-            worker = threading.Thread(target=lambda: asyncio.run(run_voice(cfg, bus)), daemon=True)
+            worker = threading.Thread(target=core, daemon=True)
             worker.start()
             sys.exit(run_overlay(cfg, events))
 

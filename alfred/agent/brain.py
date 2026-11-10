@@ -70,6 +70,9 @@ class Brain:
             setting_sources=[],
             max_turns=a["max_turns"],
             include_partial_messages=True,  # live text deltas -> speak sentence by sentence
+            # Capture the Claude CLI's stderr instead of letting it inherit Alfred's. In a windowless background
+            # process on Windows there's no valid handle to inherit -> "WinError 50: The request is not supported".
+            stderr=lambda line: print(f"[claude] {line.rstrip()}", flush=True),
         )
         self.client = ClaudeSDKClient(options=self.options)
         self._connected = False

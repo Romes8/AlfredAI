@@ -38,7 +38,7 @@ def test_wakeup_reports_a_crash_with_the_log(state, capsys, monkeypatch):
 def test_wakeup_and_sleep_a_real_background_process(state, capsys, monkeypatch):
     import sys
     script = state / "alfred_fake.py"
-    script.write_text("import time\nprint('fake alfred up', flush=True)\ntime.sleep(60)\n")
+    script.write_text("import time\nprint('fake alfred up', flush=True)\nprint('[alfred] READY', flush=True)\ntime.sleep(60)\n")
     monkeypatch.setattr(daemon, "PROJECT_ROOT", state)
     real_popen = daemon.subprocess.Popen
     monkeypatch.setattr(daemon.subprocess, "Popen",
@@ -60,3 +60,18 @@ def test_cli_parses_commands(monkeypatch):
     assert called == ["status"]
     with pytest.raises(SystemExit):
         cli.main(["dance"])
+
+
+def test_brain_pipes_cli_stderr_instead_of_inheriting():
+    # Regression: inheriting stderr in a windowless Windows process -> WinError 50 when starting the Claude CLI
+    from alfred.agent.brain import Brain
+    from alfred.agent.permissions import PermissionGate, PermissionPolicy
+    from alfred.config import load_config
+
+    cfg = load_config("does-not-exist.yaml")
+
+    async def ask(s, d):
+        return False
+
+    b = Brain(cfg, PermissionGate(PermissionPolicy(cfg), ask), None, [])
+    assert callable(b.options.stderr)
