@@ -24,49 +24,27 @@ Your voice-first buddy on top of Claude. Ask about **anything you see or want to
                  Files · Web search · look_at_screen
 ```
 
-## Setup (Windows or macOS)
+## Install
 
-1. **Python 3.11+** and **Node.js 18+**, then the Claude Code CLI, which the Agent SDK runs on:
-   ```powershell
-   npm install -g @anthropic-ai/claude-code
-   claude setup-token        # log in with your Claude Pro/Max account
-   ```
-   Then set the token it prints as an environment variable `CLAUDE_CODE_OAUTH_TOKEN` (Windows: user env var; macOS: `export` it in `~/.zshrc`).
-   **Don't** set `ANTHROPIC_API_KEY`, because that bills the API instead. Alfred removes it at startup anyway.
+**Full step-by-step guide: [docs/INSTALL.md](docs/INSTALL.md)** (Windows first, then macOS, updating, troubleshooting).
 
-2. **Install Alfred:**
-   ```powershell
-   git clone https://github.com/Romes8/AlfredAI && cd AlfredAI
-   python -m venv .venv; .venv\Scripts\activate        # macOS: source .venv/bin/activate
-   pip install -e ".[all]"
-   ```
-   **macOS permissions:** in System Settings → Privacy & Security, give your terminal (or Python) **Microphone**, **Input Monitoring** + **Accessibility** (for the right Option key) and **Screen Recording** (for screenshots). On Apple Silicon, set `stt.device: cpu` and `stt.compute_type: int8`.
-   For GPU speech-to-text you need the CUDA 12 + cuDNN runtime (`pip install nvidia-cublas-cu12 nvidia-cudnn-cu12`). Without it, Alfred falls back to the CPU.
+Quick version (Windows):
+```powershell
+npm install -g @anthropic-ai/claude-code; claude setup-token      # then: setx CLAUDE_CODE_OAUTH_TOKEN "<token>"
+git clone https://github.com/Romes8/AlfredAI.git; cd AlfredAI
+python -m venv .venv; .venv\Scripts\activate; pip install -e ".[all]"
+copy config.example.yaml config.yaml                               # edit what Alfred may do on this PC
+powershell -ExecutionPolicy Bypass -File scripts\install_command.ps1
+alfred wakeup                                                      # new terminal; hold right Alt and talk
+```
+macOS: `bash scripts/setup_mac.sh` does it all (see the guide for the permissions).
 
-3. **Voice (free):** download a Piper voice into `models/`. For example, `en_GB-alan-medium.onnx` plus its `.onnx.json` from
-   <https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_GB/alan/medium>. If there's no model, Alfred uses Windows' built-in voices.
-
-4. **Config (per machine):** `copy config.example.yaml config.yaml` and set what Alfred may do on *this* computer:
-   which folders he can read/write, whether he can take screenshots (`screen.enabled`) and whether he can run
-   commands (`agent.allow_commands`, off by default). `config.yaml` is git-ignored, so each PC keeps its own.
-
-5. **Run:**
-   ```powershell
-   python -m alfred text       # type to Alfred first: checks the Claude login, tools and permissions
-   python -m alfred run        # the real thing in this terminal: voice + overlay (Ctrl+C to stop)
-   ```
-6. **The `alfred` command (any terminal, no venv needed):**
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File scripts\install_command.ps1    # Windows
-   bash scripts/install_command.sh                                         # macOS
-   ```
-   Then from anywhere:
-   ```
-   alfred wakeup    # start him in the background - the terminal stays free, closing it doesn't stop him
-   alfred status    # is he up?
-   alfred logs      # last lines of his log (~/.alfred/alfred.log)
-   alfred sleep     # stop him
-   ```
+| Command | |
+|---|---|
+| `alfred wakeup` | start in the background |
+| `alfred sleep` | stop |
+| `alfred status` / `alfred logs` | running? / last log lines |
+| `alfred run` / `alfred text` | foreground voice / typed chat |
 
 ### Games and fullscreen apps
 - Run games in **borderless windowed** mode. Exclusive fullscreen hides every overlay, and some games also block screenshots in that mode.
@@ -99,7 +77,8 @@ Your voice-first buddy on top of Claude. Ask about **anything you see or want to
 ## Project layout
 ```
 alfred/
-  __main__.py        entry point (voice / --text)
+  __main__.py        the `alfred` command (wakeup / sleep / status / logs / run / text)
+  daemon.py          background start/stop, pid + log in ~/.alfred
   app.py             main loop: wake → listen → think → speak, spoken yes/no
   persona.py         Alfred's personality (system prompt)
   agent/brain.py     Claude Agent SDK session, model routing
@@ -107,6 +86,8 @@ alfred/
   audio/             mic + VAD, trigger key, wake word, faster-whisper, Piper TTS, yes/no parsing
   tools/             screenshots, MCP server
   overlay/           PyQt6 info panel + purple listening glow
+docs/INSTALL.md      full install guide
+scripts/             setup_mac.sh, install_command.ps1 / .sh
 tests/               pytest -q
 ```
 
