@@ -56,6 +56,7 @@ DEFAULTS: dict[str, Any] = {
     "memory": {"enabled": True, "path": None, "confirm": False},
     "windows": {"enabled": True},
     "approvals": {"say_details": False},
+    "usage": {"warn_context_tokens": 60000},
     "style": {"max_spoken_sentences": 2, "detail_spoken_sentences": 8,
               "detail_triggers": ["explain", "tell me more", "in detail", "details", "walk me through", "read it",
                                   "read me", "everything", "full", "why", "how does", "how do"]},

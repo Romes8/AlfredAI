@@ -11,6 +11,7 @@
   alfred connect google-maps       live Google Maps (places, routes, weather) via Google's official MCP server
   alfred import-places <takeout>   load your saved Google Maps places from a Google Takeout export
   alfred connectors which outside services (HubSpot, email, ...) Alfred can use on this machine
+  alfred usage      questions, estimated cost and tokens today / this week / this month + current context size
   alfred memory     show what Alfred remembers (alfred memory edit = open the file)
   alfred say "hi"   hear a sentence in Alfred's voice (try voices: --voice am_michael, --rate 1.2)
 
@@ -30,7 +31,7 @@ from alfred.config import load_config
 from alfred.events import EventBus
 
 COMMANDS = ("wakeup", "sleep", "toggle", "status", "logs", "run", "text", "connectors", "connect", "import-places",
-            "say", "memory")
+            "say", "memory", "usage")
 
 
 def _find_config(explicit: str | None) -> str | None:
@@ -131,6 +132,11 @@ def main(argv: list[str] | None = None) -> None:
         if not items:
             print("  (empty) - say \"Alfred, remember that ...\"")
         print("Changes take effect on his next start or after you say \"new chat\".")
+        return
+    if args.command == "usage":
+        from alfred.usage import report
+
+        print(report())
         return
     if args.command == "import-places":
         from alfred.places import PLACES_FILE, import_places

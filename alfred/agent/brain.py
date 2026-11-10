@@ -107,6 +107,23 @@ class Brain:
         self.client = ClaudeSDKClient(options=self.options)
         await self.start()
 
+    def _log_usage(self, msg, context_tokens: int, model: str) -> None:
+        """Record this question's cost/tokens and tell the overlay how full the conversation is."""
+        try:
+            from alfred import usage
+
+            turn = usage.turn_from_result(msg, context_tokens, model)
+            usage.record(turn)
+            today = usage.summary()["today"]
+            if self.bus:
+                self.bus.emit("usage", context=turn.context_tokens, window=turn.context_window,
+                              cost=turn.cost_usd, today_cost=today["cost_usd"], today_questions=today["questions"])
+            warn = int(self.cfg.get("usage", {}).get("warn_context_tokens", 60000))
+            if warn and turn.context_tokens > warn:
+                print(f"[usage] conversation is {turn.context_tokens} tokens - say 'new chat' to reset", flush=True)
+        except Exception as e:  # never let bookkeeping break an answer
+            print(f"[usage] couldn't record usage: {e}", flush=True)
+
     async def interrupt(self) -> None:
         """Stop the answer being generated (Roman talked over Alfred)."""
         try:
@@ -121,6 +138,8 @@ class Brain:
         if smart:
             await self.client.set_model(self.smart_model)
         full: list[str] = []
+        context_tokens = 0
+        model_used = self.smart_model if smart else self.model
         streamer = SentenceStreamer()
         streamed = False  # got live text deltas for the current assistant message
         try:
@@ -137,6 +156,10 @@ class Brain:
                         for sentence in streamer.flush():
                             await on_text(sentence)
                 elif isinstance(msg, AssistantMessage):
+                    if msg.usage:
+                        from alfred.usage import context_from_usage
+
+                        context_tokens = max(context_tokens, context_from_usage(msg.usage))
                     for sentence in streamer.flush():
                         await on_text(sentence)
                     for block in msg.content:
@@ -148,6 +171,7 @@ class Brain:
                             self.bus.emit("tool", name=block.name)
                     streamed = False
                 elif isinstance(msg, ResultMessage):
+                    self._log_usage(msg, context_tokens, model_used)
                     for sentence in streamer.flush():
                         await on_text(sentence)
                     if msg.is_error and not full:

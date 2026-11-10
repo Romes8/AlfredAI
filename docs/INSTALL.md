@@ -199,6 +199,18 @@ profile:
 - Card numbers, CVV, passwords, PINs, bank/IBAN and ID numbers (CPR, passport…) are **refused**, even if you add them.
   You always type those yourself.
 
+### Usage & cost
+Every question is logged in `~/.alfred/usage.jsonl`.
+- **Overlay footer:** `context 14.2k (7%) · this answer $0.002 · today $0.04 (9 q)`
+- **`alfred usage`:** questions, cost, tokens and web searches for today / last 7 days / this month / all time, plus how
+  full the current conversation is.
+- **Ask him:** "Alfred, how much have I used today?"
+- The dollar amounts are the SDK's **API-price estimate**. On a Pro/Max subscription you aren't billed per question.
+  It tells you how much of your plan's usage Alfred takes.
+- **Context** = how much of the conversation is re-sent with every question. It grows as you chat, which makes each
+  answer slightly more expensive. Say **"new chat"** to reset it (the footer hints when it passes 60k tokens,
+  `usage.warn_context_tokens`).
+
 ### He talks less
 He speaks at most **2 sentences** per answer (`style.max_spoken_sentences`). The rest of a longer answer is on the overlay.
 Say "explain", "tell me more", "in detail" or "walk me through" and he says up to 8 (`style.detail_spoken_sentences`).

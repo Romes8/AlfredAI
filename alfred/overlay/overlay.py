@@ -68,7 +68,9 @@ class Overlay(QWidget):
             "border: 1px solid #f59e0b; border-radius: 8px; padding: 6px;"
         )
         self.perm.hide()
-        for w in (self.status, self.heard, self.reply, self.perm):
+        self.footer = QLabel()
+        self.footer.setStyleSheet("font-size: 11px; color: #6b7280;")
+        for w in (self.status, self.heard, self.reply, self.perm, self.footer):
             lay.addWidget(w)
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -113,6 +115,14 @@ class Overlay(QWidget):
                 self.perm.show()
             else:
                 self.perm.setText(f"{d.get('summary', '')} → {res}")
+        elif ev.kind == "usage":
+            from alfred.usage import fmt_tokens
+
+            ctx, win = d.get("context", 0), d.get("window", 0)
+            pct = f" ({ctx * 100 // win}%)" if win else ""
+            warn = "  \u00b7 say \"new chat\"" if ctx > 60000 else ""
+            self.footer.setText(f"context {fmt_tokens(ctx)}{pct} \u00b7 this answer ${d.get('cost', 0):.3f} \u00b7 "
+                                f"today ${d.get('today_cost', 0):.2f} ({d.get('today_questions', 0)} q){warn}")
         elif ev.kind == "error":
             self.reply.setText(f"Error: {d['text']}")
         self._place()
