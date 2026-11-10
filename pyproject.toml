@@ -17,6 +17,7 @@ dependencies = [
     "pyobjc-framework-Quartz>=10; sys_platform == 'darwin'",
     "mss>=9",
     "pillow>=10",
+    "psutil>=5.9",
 ]
 
 [project.optional-dependencies]
