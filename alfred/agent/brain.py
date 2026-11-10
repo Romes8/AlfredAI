@@ -39,6 +39,9 @@ class Brain:
 
         if os.environ.pop("ANTHROPIC_API_KEY", None):
             print("[brain] ANTHROPIC_API_KEY was set - ignoring it so Alfred runs on your Claude subscription.")
+        if not os.environ.get("CLAUDE_CODE_OAUTH_TOKEN"):
+            print("[brain] CLAUDE_CODE_OAUTH_TOKEN isn't set. If you see 'Not logged in', run `claude setup-token` "
+                  "and export the token (see README).")
 
         workspace = expand(a["workspace"])
         workspace.mkdir(parents=True, exist_ok=True)
@@ -49,7 +52,8 @@ class Brain:
             model=self.model,
             system_prompt=system_prompt(cfg["name"]),
             tools=BUILTIN_TOOLS,
-            allowed_tools=mcp_tool_names,  # Alfred's own read-only tools run without asking
+            # Alfred's own read-only tools (screenshots) are approved by the permission policy itself,
+            # so no allowed_tools entry is needed (one would bypass the gate entirely).
             mcp_servers={"alfred": mcp_server},
             can_use_tool=gate.can_use_tool,
             hooks={"PreToolUse": [HookMatcher(matcher=None, hooks=[gate.pre_tool_hook])]},
@@ -97,6 +101,9 @@ class Brain:
                     if msg.is_error and not full:
                         err = msg.result or "something went wrong"
                         await on_text(f"Ah mate, hit a snag: {err}")
+            if any("Not logged in" in t for t in full):
+                print("[brain] Claude login missing: run `claude setup-token`, then "
+                      "`export CLAUDE_CODE_OAUTH_TOKEN=...` in this terminal (and ~/.zshrc).")
         finally:
             if smart:
                 await self.client.set_model(self.model)
