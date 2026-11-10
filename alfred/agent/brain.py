@@ -61,7 +61,7 @@ class Brain:
             tools=builtin_tools(cfg),
             # Alfred's own read-only tools (screenshots) are approved by the permission policy itself,
             # so no allowed_tools entry is needed (one would bypass the gate entirely).
-            mcp_servers={"alfred": mcp_server} if mcp_server else {},
+            mcp_servers=self._servers(cfg, mcp_server),
             can_use_tool=gate.can_use_tool,
             hooks={"PreToolUse": [HookMatcher(matcher=None, hooks=[gate.pre_tool_hook])]},
             permission_mode="default",
@@ -73,6 +73,15 @@ class Brain:
         )
         self.client = ClaudeSDKClient(options=self.options)
         self._connected = False
+
+    @staticmethod
+    def _servers(cfg: dict, alfred_server) -> dict:
+        from alfred.connectors import load_connectors
+
+        servers = {c.name: c.server for c in load_connectors(cfg)}
+        if alfred_server:
+            servers["alfred"] = alfred_server
+        return servers
 
     async def start(self) -> None:
         await self.client.connect()

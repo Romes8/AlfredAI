@@ -76,6 +76,22 @@ overlay:
   opacity: 0.85
   hide_after_s: 12
 
+# Outside services Alfred may use ON THIS MACHINE, via MCP servers. Secrets: write ${ENV_VAR}, never the value.
+# mode: read_only (changes blocked) | ask_writes (default: reads automatic, changes need your tap) | ask_all
+# Check what loaded with:  alfred connectors
+connectors: {}
+#  hubspot:
+#    command: npx
+#    args: ["-y", "@hubspot/mcp-server"]
+#    env: {PRIVATE_APP_ACCESS_TOKEN: "${HUBSPOT_TOKEN}"}
+#    mode: ask_writes
+#    description: "HubSpot CRM - contacts, companies, deals"
+#  mail:                                   # any remote MCP server that takes a token
+#    url: https://example.com/mcp
+#    headers: {Authorization: "Bearer ${MAIL_MCP_TOKEN}"}
+#    mode: read_only
+#    deny: [delete_email]                  # per-tool overrides: allow / ask / deny
+
 links:
   enabled: true               # Alfred can open web pages in your default browser
   auto_open: false            # false = he asks first (tap to approve). A link can carry data out, so keep false

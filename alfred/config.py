@@ -52,6 +52,7 @@ DEFAULTS: dict[str, Any] = {
     "tts": {"engine": "piper", "piper_model": "./models/en_GB-alan-medium.onnx", "rate": 1.0},
     "overlay": {"enabled": True, "glow": True, "glow_thickness": 36, "glow_intensity": 0.8, "panel": True, "position": "top-right", "width": 420, "opacity": 0.85, "hide_after_s": 12},
     "links": {"enabled": True, "auto_open": False},
+    "connectors": {},
     "screen": {"enabled": True, "max_width": 1280, "jpeg_quality": 70},
 }
 
