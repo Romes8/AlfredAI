@@ -45,6 +45,9 @@ mkdir -p "$HOME/Documents/Alfred"
 # 7) tests
 python -m pytest -q
 
+# 8) `alfred` command for every terminal
+bash scripts/install_command.sh
+
 cat <<'EOF'
 
 == Almost there ==

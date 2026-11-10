@@ -52,8 +52,20 @@ Your voice-first buddy on top of Claude. Ask about **anything you see or want to
 
 5. **Run:**
    ```powershell
-   python -m alfred --text     # type to Alfred first: checks the Claude login, tools and permissions
-   python -m alfred            # the real thing: voice + overlay
+   python -m alfred text       # type to Alfred first: checks the Claude login, tools and permissions
+   python -m alfred run        # the real thing in this terminal: voice + overlay (Ctrl+C to stop)
+   ```
+6. **The `alfred` command (any terminal, no venv needed):**
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File scripts\install_command.ps1    # Windows
+   bash scripts/install_command.sh                                         # macOS
+   ```
+   Then from anywhere:
+   ```
+   alfred wakeup    # start him in the background - the terminal stays free, closing it doesn't stop him
+   alfred status    # is he up?
+   alfred logs      # last lines of his log (~/.alfred/alfred.log)
+   alfred sleep     # stop him
    ```
 
 ### Games and fullscreen apps
