@@ -57,6 +57,7 @@ macOS: `bash scripts/setup_mac.sh` does it all (see the guide for the permission
 | `alfred run` / `alfred text` | foreground voice / typed chat |
 | `alfred connectors` | which outside services he can use on this machine |
 | `alfred memory` / `alfred memory edit` | what he remembers / open the file |
+| `alfred usage` | questions, estimated cost, tokens and current context size |
 
 ### Games and fullscreen apps
 - Run games in **borderless windowed** mode. Exclusive fullscreen hides every overlay, and some games also block screenshots in that mode.

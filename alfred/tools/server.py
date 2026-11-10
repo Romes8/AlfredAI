@@ -201,7 +201,22 @@ def build_server(cfg: dict):
         res = await asyncio.to_thread(search_places, str(args.get("query", "")), str(args.get("list", "")))
         return {"content": [{"type": "text", "text": json.dumps(res, ensure_ascii=False)}]}
 
-    tools = [get_my_details, my_places]
+    @tool(
+        "usage_stats",
+        "How much Alfred has been used: questions, estimated cost (API prices) and tokens for today / last 7 days / "
+        "this month, plus how big the current conversation is. Use when Roman asks about cost, usage, tokens or "
+        "context. Say it in one sentence; mention it's an estimate and that on his subscription it counts toward "
+        "the plan rather than being billed.",
+        {"type": "object", "properties": {}},
+    )
+    async def usage_stats(args):  # noqa: ARG001
+        import json
+
+        from alfred.usage import summary
+
+        return {"content": [{"type": "text", "text": json.dumps(await asyncio.to_thread(summary))}]}
+
+    tools = [get_my_details, my_places, usage_stats]
     if cfg.get("windows", {}).get("enabled", True):
         tools += [list_windows, arrange_window]
     if ccfg.get("enabled", False):
