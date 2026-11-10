@@ -186,7 +186,22 @@ def build_server(cfg: dict):
             prof = {"message": "No details saved yet - he can add them under `profile:` in config.yaml."}
         return {"content": [{"type": "text", "text": json.dumps(prof, ensure_ascii=False)}]}
 
-    tools = [get_my_details]
+    @tool(
+        "my_places",
+        "Search Roman's saved Google Maps places (starred, Want to go, Favourites, his own lists, Home/Work labels) - "
+        "imported from Google Takeout. Use for 'my saved places', 'that restaurant I saved', 'what's on my Rome list', "
+        "'where's home'. query = words to match (name, address, note); list = list name. Empty query lists the lists.",
+        {"type": "object", "properties": {"query": {"type": "string"}, "list": {"type": "string"}}},
+    )
+    async def my_places(args):
+        import json
+
+        from alfred.places import search_places
+
+        res = await asyncio.to_thread(search_places, str(args.get("query", "")), str(args.get("list", "")))
+        return {"content": [{"type": "text", "text": json.dumps(res, ensure_ascii=False)}]}
+
+    tools = [get_my_details, my_places]
     if cfg.get("windows", {}).get("enabled", True):
         tools += [list_windows, arrange_window]
     if ccfg.get("enabled", False):

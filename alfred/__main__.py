@@ -8,6 +8,8 @@
   alfred run        run in this terminal (foreground, Ctrl+C to stop)
   alfred text       type instead of talk (foreground)
   alfred connect google-calendar   one-time Google Calendar setup (sign-in + config)
+  alfred connect google-maps       live Google Maps (places, routes, weather) via Google's official MCP server
+  alfred import-places <takeout>   load your saved Google Maps places from a Google Takeout export
   alfred connectors which outside services (HubSpot, email, ...) Alfred can use on this machine
   alfred memory     show what Alfred remembers (alfred memory edit = open the file)
   alfred say "hi"   hear a sentence in Alfred's voice (try voices: --voice am_michael, --rate 1.2)
@@ -27,7 +29,8 @@ import traceback
 from alfred.config import load_config
 from alfred.events import EventBus
 
-COMMANDS = ("wakeup", "sleep", "toggle", "status", "logs", "run", "text", "connectors", "connect", "say", "memory")
+COMMANDS = ("wakeup", "sleep", "toggle", "status", "logs", "run", "text", "connectors", "connect", "import-places",
+            "say", "memory")
 
 
 def _find_config(explicit: str | None) -> str | None:
@@ -129,10 +132,29 @@ def main(argv: list[str] | None = None) -> None:
             print("  (empty) - say \"Alfred, remember that ...\"")
         print("Changes take effect on his next start or after you say \"new chat\".")
         return
+    if args.command == "import-places":
+        from alfred.places import PLACES_FILE, import_places
+
+        if not args.words:
+            print("Usage: alfred import-places <Google Takeout .zip or unzipped folder>\n"
+                  "Get it at takeout.google.com -> select 'Saved' and 'Maps (your places)' -> export.")
+            sys.exit(1)
+        n = import_places(" ".join(args.words))
+        print(f"Imported {n} saved places -> {PLACES_FILE}" + ("" if n else "  (nothing found - is it the right export?)"))
+        print("Restart isn't needed - Alfred reads the file when you ask about your places.")
+        return
     if args.command == "connect":
         what = (args.words[:1] or [""])[0].lower().replace("_", "-")
+        if what in ("google-maps", "maps", "gmaps"):
+            from pathlib import Path
+
+            from alfred.daemon import PROJECT_ROOT
+            from alfred.setup_google import connect_maps
+
+            cfg_path = Path(args.config or os.environ.get("ALFRED_CONFIG") or PROJECT_ROOT / "config.yaml")
+            sys.exit(connect_maps(cfg_path))
         if what not in ("google-calendar", "gcal", "calendar"):
-            print("Usage: alfred connect google-calendar [path-to-client_secret.json]")
+            print("Usage: alfred connect google-calendar [client_secret.json]  |  alfred connect google-maps")
             sys.exit(1)
         from pathlib import Path
 

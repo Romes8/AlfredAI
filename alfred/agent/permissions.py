@@ -110,6 +110,8 @@ class PermissionPolicy:
             # without asking; anything else (a link he made up, or found inside a page/email) needs a tap.
             if self.auto_open_links is True:
                 return Decision("allow")
+            if self.auto_open_links and all(GOOGLE_MAPS_URL.match(u) for u in urls):
+                return Decision("allow")  # Google Maps directions / place links - low risk, used a lot
             if self.auto_open_links == "search_results" and all(_norm_url(u) in self.search_urls for u in urls):
                 return Decision("allow")
             return Decision("ask")
@@ -225,6 +227,10 @@ def _calendar_summary(action: str, args: dict[str, Any]) -> str:
     return f"Want me to {conn_mod.pretty(action)} in your calendar?"
 
 
+# real Google domains only: google.com, google.dk, google.co.uk, google.com.au ... (not google.com.evil.example)
+_GTLD = r"google\.(?:com|[a-z]{2}|co\.[a-z]{2}|com\.[a-z]{2})"
+GOOGLE_MAPS_URL = re.compile(rf"^https://(?:www\.)?{_GTLD}/maps(?:/|\?|$)|^https://maps\.{_GTLD}/|"
+                             r"^https://maps\.app\.goo\.gl/", re.I)
 URL_RE = re.compile(r"https?://[^\s\"'<>)\]}\\]+", re.I)
 
 
