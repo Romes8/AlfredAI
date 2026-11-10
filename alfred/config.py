@@ -55,6 +55,8 @@ DEFAULTS: dict[str, Any] = {
     "apps": {"enabled": True, "auto_open": True},
     "memory": {"enabled": True, "path": None, "confirm": False},
     "windows": {"enabled": True},
+    "browser_control": {"enabled": False, "browser": "chrome", "use_my_chrome": False, "profile_dir": None,
+                        "on_type": "ask", "on_risky_click": "ask", "allow_uploads": False},
     "commands": {"enabled": False, "on_read_file": "ask", "on_change": "ask", "on_delete": "ask",
                  "timeout_s": 60, "cwd": None},
     "overlay": {"enabled": True, "glow": True, "glow_thickness": 36, "glow_intensity": 0.8, "panel": True, "position": "top-right", "width": 420, "opacity": 0.85, "hide_after_s": 12},

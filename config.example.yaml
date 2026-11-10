@@ -121,6 +121,16 @@ commands:
   timeout_s: 60
   cwd: null                   # default folder to run in (null = Alfred's folder)
 
+# Alfred operates his OWN Chrome window (click, play videos, type, fill forms) via Playwright MCP (needs Node.js).
+# Separate profile: log in to sites in that window once and he stays logged in there - your normal Chrome is untouched.
+browser_control:
+  enabled: false
+  browser: chrome
+  use_my_chrome: false        # true = drive your real Chrome via the "Playwright MCP Bridge" extension (your logins!)
+  on_type: ask                # typing / filling forms:            ask | deny | allow
+  on_risky_click: ask         # buy / pay / send / delete buttons: ask | deny
+  allow_uploads: false        # uploading files from this computer (asks when true)
+
 apps:
   enabled: true               # "Alfred, open Spotify" - installed apps only, no commands
   auto_open: true             # false = he asks first (tap to approve)
