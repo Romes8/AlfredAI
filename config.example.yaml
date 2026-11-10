@@ -69,7 +69,7 @@ tts:
   #   British female:  bf_emma  bf_isabella  bf_alice  bf_lily
   #   American male:   am_michael  am_adam  am_puck  am_liam  am_eric  am_echo  am_onyx  am_fenrir
   #   American female: af_heart  af_bella  af_nicole  af_sarah  af_sky  af_nova  af_river
-  voice: bm_george
+  voice: bm_lewis
   rate: 1.1                   # speaking speed: 1.0 normal, 1.2 brisk, 1.4 fast
   piper_model: ./models/en_GB-alan-medium.onnx
 

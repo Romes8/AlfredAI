@@ -84,7 +84,7 @@ class Speaker:
             if not f.exists():
                 _download(KOKORO_URL + f.name, f)
         self._kokoro = Kokoro(str(model), str(voices))
-        self.voice = self.cfg.get("voice", "bm_george")
+        self.voice = self.cfg.get("voice", "bm_lewis")
 
     def stop(self) -> None:
         """Cut Alfred off mid-sentence (called from the key listener thread)."""
