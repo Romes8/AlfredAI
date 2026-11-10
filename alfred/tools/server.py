@@ -2,12 +2,15 @@
 from __future__ import annotations
 
 import asyncio
+import sys
 from urllib.parse import urlparse
 
 from claude_agent_sdk import create_sdk_mcp_server, tool
 
 from alfred.tools import apps as apps_mod
 from alfred.tools import browser
+from alfred.tools import commands as cmd_mod
+from alfred.tools import windows as win_mod
 from alfred.tools import screen
 
 
@@ -108,7 +111,66 @@ def build_server(cfg: dict):
 
         return {"content": [{"type": "text", "text": json.dumps(await asyncio.to_thread(mem.forget, args.get("what", "")))}]}
 
+    @tool(
+        "list_windows",
+        "List the app windows open on Roman's screen(s) and how many monitors he has.",
+        {"type": "object", "properties": {}},
+    )
+    async def list_windows(args):  # noqa: ARG001
+        import json
+
+        return {"content": [{"type": "text", "text": json.dumps(await asyncio.to_thread(win_mod.describe))}]}
+
+    @tool(
+        "arrange_window",
+        "Move / snap / resize an open window. `window` = app or title words ('chrome', 'spotify', 'vs code'). "
+        "action: focus, maximize, minimize, restore, left, right, top, bottom, top_left, top_right, bottom_left, "
+        "bottom_right, center, move_to_monitor, close. `monitor` (1 = leftmost) moves it to that screen first. "
+        "For 'put X left and Y right' call it twice.",
+        {"type": "object", "properties": {
+            "window": {"type": "string"},
+            "action": {"type": "string", "enum": win_mod.ACTIONS},
+            "monitor": {"type": "integer", "minimum": 1},
+        }, "required": ["window", "action"]},
+    )
+    async def arrange_window(args):
+        import json
+
+        result = await asyncio.to_thread(win_mod.arrange, str(args.get("window", "")), str(args.get("action", "")),
+                                         args.get("monitor"))
+        return {"content": [{"type": "text", "text": json.dumps(result)}]}
+
+    ccfg = cfg.get("commands", {})
+
+    @tool(
+        "run_command",
+        "Run a terminal command on Roman's computer (" + ("PowerShell" if sys.platform == "win32" else "zsh/bash")
+        + ") and get its output. Read-only commands (status, listing, versions, network info) run straight away; "
+        "anything that adds, changes, installs, deletes or stops something needs his approval or is blocked; "
+        "destructive commands never run. Prefer read-only commands, one clear command at a time.",
+        {"type": "object", "properties": {"command": {"type": "string"},
+                                          "cwd": {"type": "string", "description": "folder to run in (optional)"}},
+         "required": ["command"]},
+    )
+    async def run_command(args):
+        import json
+        import os
+
+        from alfred.config import expand
+
+        cwd = args.get("cwd") or ccfg.get("cwd") or cfg["agent"]["workspace"]
+        cwd = str(expand(cwd))
+        if not os.path.isdir(cwd):
+            cwd = str(expand(cfg["agent"]["workspace"]))
+        result = await asyncio.to_thread(cmd_mod.run, str(args.get("command", "")), cwd,
+                                         int(ccfg.get("timeout_s", 60)))
+        return {"content": [{"type": "text", "text": json.dumps(result)}]}
+
     tools = []
+    if cfg.get("windows", {}).get("enabled", True):
+        tools += [list_windows, arrange_window]
+    if ccfg.get("enabled", False):
+        tools.append(run_command)
     if cfg.get("memory", {}).get("enabled", True):
         tools += [remember, forget]
     if cfg.get("apps", {}).get("enabled", True):

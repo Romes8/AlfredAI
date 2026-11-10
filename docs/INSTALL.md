@@ -122,6 +122,31 @@ alfred text      # type instead of talk
 - **Apps:** "Alfred, open Spotify / Steam / VS Code". Only installed apps (from the Start menu) can be opened,
   never arbitrary commands. Set `apps.auto_open: false` to make him ask first, or `apps.enabled: false` to turn it off.
 
+### Windows and terminal commands
+**Windows (on by default):** "put Chrome on the left and Spotify on the right", "move VS Code to my second monitor",
+"maximise Outlook", "minimise everything Discord". Monitors are numbered from the left. Closing a window asks first,
+because the app could lose unsaved work.
+
+**Terminal commands (off by default):** turn them on per machine in `config.yaml`:
+```yaml
+commands:
+  enabled: true
+  on_read_file: ask     # reading a file's contents (cat / Get-Content)
+  on_change: ask        # adding, creating, installing, moving, stopping
+  on_delete: ask        # deleting, uninstalling      (each: ask | deny)
+```
+Every command is checked before it runs. On Windows they run in PowerShell, hidden, and he tells you the result:
+| Command type | Examples | What happens |
+|---|---|---|
+| Just looking | `git status`, `dir`, `ipconfig`, `Get-Process`, `pip list`, `nvidia-smi` | runs straight away |
+| Reads a file | `cat`, `type`, `Get-Content` | `on_read_file` |
+| Adds / changes | `mkdir`, `pip install`, `git commit`, `git push`, `> file`, `Stop-Process` | `on_change` |
+| Deletes | `del`, `rm`, `Remove-Item`, `uninstall`, `git branch -D` | `on_delete` |
+| Destructive | format, diskpart, registry edits, `shutdown`, `rm -rf /`, deleting a whole drive, `git push --force`, `git reset --hard`, download-and-run, encoded commands, `sudo`/admin | **never runs** |
+
+Anything Alfred doesn't recognise counts as a change, so it asks. For a chain like `dir; del x`, the riskiest part decides.
+When he asks, he reads out the **actual command**, not a description of it.
+
 ### Memory (between sessions)
 Alfred keeps long-term notes in **`memory.md`** in his folder (`agent.workspace`, e.g. `Documents\Alfred\memory.md`).
 - "Alfred, remember that Anna's birthday is March 3rd" saves a line. "Alfred, forget Anna's birthday" removes it.
