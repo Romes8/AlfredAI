@@ -31,7 +31,35 @@ RISKY_CLICK = re.compile(
     r"\b(buy|pay|payment|purchase|order|checkout|check out|place order|submit|send|delete|remove|erase|confirm|"
     r"subscribe|unsubscribe|sign up|register|book|reserve|transfer|donate|post|publish|tweet|reply|share|accept|"
     r"agree|approve|allow|log ?out|sign ?out|cancel (my )?(subscription|order|account)|close account|install|"
-    r"download|upload|save changes|apply)\b", re.I)
+    r"download|upload|save changes|apply|continue|proceed|complete|finish|finali[sz]e|pay now|add to (cart|basket|bag)|"
+    r"go to checkout|review order|authori[sz]e|verify|activate|redeem|claim|enroll|join|yes)\b", re.I)
+
+# Once the page itself is a checkout / payment / account-danger page, EVERY click and key press asks.
+SENSITIVE_PAGE = re.compile(r"(checkout|/cart\b|basket|payment|/pay\b|billing|purchase|/order|subscri|"
+                            r"delete[-_]?account|close[-_]?account|transfer|wallet|paypal\.com|stripe\.com|"
+                            r"klarna|mobilepay|/bank|netbank|login\.|signin|/account/security)", re.I)
+PAGE_URL = re.compile(r"Page URL:\s*(\S+)")
+
+
+class PageTracker:
+    """Remembers which page Alfred's browser is on (read from the tool results)."""
+
+    def __init__(self) -> None:
+        self.url = ""
+
+    def update_from(self, tool_response) -> None:
+        import json
+
+        text = tool_response if isinstance(tool_response, str) else json.dumps(tool_response, default=str)
+        found = PAGE_URL.findall(text)
+        if found:
+            self.url = found[-1].strip("\\\"',")
+
+    def sensitive(self) -> bool:
+        return bool(self.url and SENSITIVE_PAGE.search(self.url))
+
+
+page = PageTracker()
 
 
 def server_config(cfg: dict) -> dict:
@@ -57,14 +85,15 @@ def decide(short: str, args: dict[str, Any], cfg: dict) -> tuple[str, str]:
     if short in TYPING:
         mode = b.get("on_type", "ask")
         return ("deny", "Typing into web pages is turned off on this machine.") if mode == "deny" else (mode, "")
+    on_sensitive_page = page.sensitive()
     if short == "browser_press_key":
         key = str(args.get("key", ""))
-        return ("ask", "") if key.lower() in ("enter", "return") else ("allow", "")
+        return ("ask", "") if key.lower() in ("enter", "return", " ", "space") or on_sensitive_page else ("allow", "")
     if short == "browser_handle_dialog":
         return ("ask", "") if args.get("accept") else ("allow", "")
     if short in ("browser_click", "browser_mouse_click_xy"):
         label = str(args.get("element", ""))
-        if not label or RISKY_CLICK.search(label):
+        if not label or RISKY_CLICK.search(label) or on_sensitive_page:
             mode = b.get("on_risky_click", "ask")
             return ("deny", "Clicking buttons that buy/send/delete is off.") if mode == "deny" else ("ask", "")
         return "allow", ""
@@ -94,7 +123,8 @@ def summarize(short: str, args: dict[str, Any]) -> tuple[str, str]:
     if short == "browser_select_option":
         return f"I want to pick {args.get('values')} in {el}.", f"SELECT {args.get('values')} in {el}"
     if short in ("browser_click", "browser_mouse_click_xy"):
-        return f"I want to click \"{el}\".", f"CLICK {el}"
+        where = " - we're on a payment or account page" if page.sensitive() else ""
+        return f"I want to click \"{el}\"{where}.", f"CLICK {el}\n\npage: {page.url}"
     if short == "browser_press_key":
         return "I want to press Enter on the page.", f"KEY {args.get('key')}"
     if short == "browser_handle_dialog":

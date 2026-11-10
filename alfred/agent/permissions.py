@@ -280,6 +280,10 @@ class PermissionGate:
 
     async def post_tool_hook(self, input_data: dict, tool_use_id: str | None, context: Any) -> dict:  # noqa: ARG002
         """Remember the links his web searches returned - those may be opened without a tap."""
+        if str(input_data.get("tool_name", "")).startswith("mcp__browser__"):
+            from alfred.tools import browser_control
+
+            browser_control.page.update_from(input_data.get("tool_response"))
         if input_data.get("tool_name") == "WebSearch":
             import json
 

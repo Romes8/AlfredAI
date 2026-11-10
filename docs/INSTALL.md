@@ -173,7 +173,8 @@ Try: "Alfred, play some lofi on YouTube", "pause it", "fill in the contact form 
 |---|---|
 | Open pages, click links / play / next, scroll, read the page | automatic |
 | Type anything, fill forms, choose options, press Enter | asks (he says what he'll type, and where) |
-| Click buy / pay / order / send / delete / confirm / subscribe / sign out… | asks (`on_risky_click: deny` = never) |
+| Click buy / pay / order / send / delete / confirm / subscribe / continue / proceed / add to cart / yes… | asks (`on_risky_click: deny` = never) |
+| **Any** click or key press while on a checkout, cart, payment, billing, login or account-security page | asks |
 | Run JavaScript on the page, upload files from your PC | blocked |
 
 He never completes a purchase or payment: he stops at the last step for you to finish.
