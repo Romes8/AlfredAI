@@ -27,9 +27,10 @@ ALIASES = {
 
 
 def _windows_apps() -> dict[str, str]:
-    ps = "Get-StartApps | Select-Object Name, AppID | ConvertTo-Json -Compress"
+    ps = ("[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "
+          "Get-StartApps | Select-Object Name, AppID | ConvertTo-Json -Compress")
     out = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps],
-                         capture_output=True, text=True, timeout=20,
+                         capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20,
                          creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)).stdout
     data = json.loads(out or "[]")
     if isinstance(data, dict):

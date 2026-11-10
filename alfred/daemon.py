@@ -21,7 +21,7 @@ LOG_FILE = STATE_DIR / "alfred.log"
 def running_pid() -> int | None:
     """PID of the background Alfred, or None. Cleans up a stale pid file."""
     try:
-        pid = int(PID_FILE.read_text().strip())
+        pid = int(PID_FILE.read_text(encoding="utf-8").strip())
     except (FileNotFoundError, ValueError):
         return None
     try:
@@ -60,13 +60,14 @@ def wakeup(extra_args: list[str]) -> int:
     start_offset = LOG_FILE.stat().st_size
     cmd = [_python_for_background(), "-u", "-m", "alfred", "run", *extra_args]
     kwargs: dict = {"cwd": str(PROJECT_ROOT), "stdout": log, "stderr": subprocess.STDOUT,
-                    "stdin": subprocess.DEVNULL, "env": {**os.environ, "PYTHONUNBUFFERED": "1"}}
+                    "stdin": subprocess.DEVNULL, "env": {**os.environ, "PYTHONUNBUFFERED": "1", "PYTHONUTF8": "1",
+                                                  "PYTHONIOENCODING": "utf-8:replace"}}
     if sys.platform == "win32":
         kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW
     else:
         kwargs["start_new_session"] = True  # keeps running after the terminal closes
     proc = subprocess.Popen(cmd, **kwargs)
-    PID_FILE.write_text(str(proc.pid))
+    PID_FILE.write_text(str(proc.pid), encoding="utf-8")
     print("Waking Alfred up", end="", flush=True)
     deadline = time.monotonic() + STARTUP_TIMEOUT_S
     while time.monotonic() < deadline:

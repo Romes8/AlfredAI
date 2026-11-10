@@ -151,9 +151,15 @@ def classify(cmd: str, secret_patterns: list[str] | None = None) -> tuple[str, s
     return worst, reason
 
 
+UTF8_PREFIX = ("[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "
+               "$OutputEncoding = [System.Text.Encoding]::UTF8; ")
+
+
 def shell_argv(cmd: str) -> list[str]:
     if sys.platform == "win32":
-        return ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", cmd]
+        # make PowerShell emit UTF-8 so names like 'Košice' / 'Ľubica' come back intact (the safety check runs on
+        # the user's command only, before this prefix is added)
+        return ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", UTF8_PREFIX + cmd]
     return ["/bin/zsh" if sys.platform == "darwin" else "/bin/bash", "-lc", cmd]
 
 
