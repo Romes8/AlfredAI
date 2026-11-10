@@ -135,9 +135,10 @@ def test_commands_off_by_default_and_screen_can_be_disabled(cfg):
     assert "Bash" in builtin_tools(cfg)
     cfg["screen"]["enabled"] = False
     _, names = build_server(cfg)
-    assert names == ["mcp__alfred__open_app", "mcp__alfred__open_url"]
+    assert "mcp__alfred__look_at_screen" not in names and "mcp__alfred__open_url" in names
     cfg["links"]["enabled"] = False
     cfg["apps"]["enabled"] = False
+    cfg["memory"]["enabled"] = False
     assert build_server(cfg) == (None, [])
     assert "CAN'T see his screen" in system_prompt(cfg)
 

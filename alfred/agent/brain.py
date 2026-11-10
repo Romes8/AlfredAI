@@ -97,8 +97,9 @@ class Brain:
             self._connected = False
 
     async def reset(self) -> None:
-        """Forget the conversation (new session)."""
+        """Forget the conversation (new session) - and reload long-term memory into the instructions."""
         await self.stop()
+        self.options.system_prompt = system_prompt(self.cfg)
         self.client = ClaudeSDKClient(options=self.options)
         await self.start()
 
