@@ -1,0 +1,81 @@
+# Per-machine config. Copy to config.yaml on each computer and edit - config.yaml is git-ignored,
+# so every PC Alfred runs on keeps its own rules. Or point ALFRED_CONFIG at a file, or pass --config.
+
+name: Alfred
+
+agent:
+  # Runs on your Claude Pro/Max login (run `claude setup-token` once).
+  # Do NOT set ANTHROPIC_API_KEY on this machine, or you'll be billed via the API instead.
+  model: haiku               # default for everything - cheap and fast
+  smart_model: sonnet        # used only when you ask Alfred to think harder
+  smart_triggers: ["think hard", "think harder", "deep dive", "research", "take your time"]
+  max_turns: 12
+  workspace: ~/Documents/Alfred   # Alfred's own folder (his working directory)
+  allow_commands: false          # let Alfred run terminal commands (each one still needs your approval)
+
+permissions:
+  # Folders Alfred may READ. Everything else is off limits.
+  readable_dirs:
+    - "~/Documents/Alfred"
+  # Folders Alfred may WRITE to - and only after you approve.
+  writable_dirs:
+    - "~/Documents/Alfred"
+  confirm_timeout_s: 15
+  # How you approve writes / opening a URL:
+  #   key   - tap the trigger key (a voice can't approve: a video or someone else could say "yes")
+  #   voice - say yes      both - either.   Saying "no" or silence always means no.
+  approval: key
+  # Secrets (.env, .ssh, .kube, *.pem, *.key, tokens, passwords, ...) are always blocked - see alfred/config.py.
+  # To replace that list, uncomment and write your own:
+  # deny_patterns: [".env", ".ssh"]
+
+wake:
+  # How you summon Alfred:
+  #  1) tap the trigger key - RIGHT ALT on Windows, RIGHT OPTION on macOS (AltGr combos like AltGr+2 are ignored)
+  #  2) optionally say his name - pick a wake word backend below, or `none` for key-only
+  trigger_key: right_alt      # right_alt (= right Option on Mac) / right_ctrl / right_cmd / f13
+  # hold - push-to-talk: Alfred hears you ONLY while the key is held; mic audio is discarded otherwise.
+  #        Ignores surrounding voices. Wake word backend is ignored. Approve things with a tap.
+  # tap  - tap once, then talk; he stops when you go quiet (picks up nearby voices too)
+  trigger_mode: hold
+  # none        - key only, no always-on listening (lightest)
+  # whisper     - no setup: listens for speech and checks whether you said "Alfred" (uses the GPU)
+  # openwakeword - lighter: needs a custom "hey alfred" .onnx model (see README)
+  # porcupine   - lightest: needs a custom "Hey Alfred" .ppn file + free Picovoice access key
+  backend: whisper
+  words: ["alfred", "alfie", "al fred", "alfredo"]
+  openwakeword_model: ./models/hey_alfred.onnx
+  porcupine_keyword_path: ./models/hey_alfred_windows.ppn
+  porcupine_access_key_env: PICOVOICE_ACCESS_KEY
+
+audio:
+  input_device: null          # null = system default mic; or a device name/index
+  sample_rate: 16000
+  vad_aggressiveness: 2       # 0-3, higher = stricter
+  silence_ms: 800             # how long you have to be quiet before Alfred stops listening
+  max_utterance_s: 20
+
+stt:
+  model: small.en             # tiny.en / base.en / small.en / distil-large-v3
+  device: cuda                # cuda or cpu
+  compute_type: float16       # float16 on GPU, int8 on CPU
+
+tts:
+  engine: piper               # piper (free, local) or pyttsx3 (Windows built-in voices)
+  piper_model: ./models/en_GB-alan-medium.onnx
+  rate: 1.0
+
+overlay:
+  enabled: true
+  glow: true                  # purple glow around the screen edges while Alfred is listening
+  glow_thickness: 36
+  panel: true                 # small info panel (what he heard, his answer, permission prompts)
+  position: top-right         # top-right / top-left / bottom-right / bottom-left
+  width: 420
+  opacity: 0.85
+  hide_after_s: 12
+
+screen:
+  enabled: true               # false = Alfred can't take screenshots on this machine
+  max_width: 1280
+  jpeg_quality: 70
