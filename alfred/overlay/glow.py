@@ -15,10 +15,11 @@ PURPLE = (168, 85, 247)  # tailwind purple-500
 
 
 class _EdgeWindow(QWidget):
-    def __init__(self, screen, thickness: int, color: tuple[int, int, int]) -> None:
+    def __init__(self, screen, thickness: int, color: tuple[int, int, int], intensity: float) -> None:
         super().__init__()
         self.thickness = thickness
         self.color = color
+        self.intensity = max(0.0, min(1.0, intensity))
         self.level = 0.0  # 0..1, animated by EdgeGlow
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint
@@ -26,6 +27,7 @@ class _EdgeWindow(QWidget):
             | Qt.WindowType.Tool
             | Qt.WindowType.WindowTransparentForInput
             | Qt.WindowType.WindowDoesNotAcceptFocus
+            | Qt.WindowType.NoDropShadowWindowHint  # macOS draws a dark shadow line around frameless windows
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
@@ -36,9 +38,11 @@ class _EdgeWindow(QWidget):
     def _grad(self, x1, y1, x2, y2) -> QLinearGradient:
         r, g, b = self.color
         grad = QLinearGradient(QPointF(x1, y1), QPointF(x2, y2))
-        grad.setColorAt(0.0, QColor(r, g, b, int(210 * self.level)))
-        grad.setColorAt(0.35, QColor(r, g, b, int(110 * self.level)))
-        grad.setColorAt(1.0, QColor(r, g, b, 0))
+        peak = 170 * self.level * self.intensity
+        # smooth ease-out falloff (many stops) so there's no visible band where the glow ends
+        for i in range(9):
+            t = i / 8
+            grad.setColorAt(t, QColor(r, g, b, int(peak * (1 - t) ** 2.2)))
         return grad
 
     def paintEvent(self, event) -> None:  # noqa: N802, ARG002
@@ -55,8 +59,9 @@ class _EdgeWindow(QWidget):
         r, g, b = self.color
         for cx, cy in ((0, 0), (w, 0), (0, h), (w, h)):
             rg = QRadialGradient(QPointF(cx, cy), t * 2.2)
-            rg.setColorAt(0.0, QColor(r, g, b, int(120 * self.level)))
-            rg.setColorAt(1.0, QColor(r, g, b, 0))
+            for i in range(7):
+                k = i / 6
+                rg.setColorAt(k, QColor(r, g, b, int(70 * self.level * self.intensity * (1 - k) ** 2)))
             p.setBrush(rg)
             p.drawEllipse(QPointF(cx, cy), t * 2.2, t * 2.2)
         p.end()
@@ -65,8 +70,8 @@ class _EdgeWindow(QWidget):
 class EdgeGlow:
     """Call set_active(True/False). Fades in, pulses gently while active, fades out."""
 
-    def __init__(self, thickness: int = 36, color: tuple[int, int, int] = PURPLE) -> None:
-        self.windows = [_EdgeWindow(s, thickness, color) for s in QGuiApplication.screens()]
+    def __init__(self, thickness: int = 36, color: tuple[int, int, int] = PURPLE, intensity: float = 0.6) -> None:
+        self.windows = [_EdgeWindow(s, thickness, color, intensity) for s in QGuiApplication.screens()]
         self.active = False
         self.level = 0.0
         self._t0 = time.monotonic()
