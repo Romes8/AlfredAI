@@ -7,6 +7,7 @@
   alfred run        run in this terminal (foreground, Ctrl+C to stop)
   alfred text       type instead of talk (foreground)
   alfred connectors which outside services (HubSpot, email, ...) Alfred can use on this machine
+  alfred memory     show what Alfred remembers (alfred memory edit = open the file)
   alfred say "hi"   hear a sentence in Alfred's voice (try voices: --voice am_michael, --rate 1.2)
 
 `python -m alfred` with no command = `alfred run` (same as before). Old `--text` still works.
@@ -24,7 +25,7 @@ import traceback
 from alfred.config import load_config
 from alfred.events import EventBus
 
-COMMANDS = ("wakeup", "sleep", "status", "logs", "run", "text", "connectors", "say")
+COMMANDS = ("wakeup", "sleep", "status", "logs", "run", "text", "connectors", "say", "memory")
 
 
 def _find_config(explicit: str | None) -> str | None:
@@ -100,6 +101,30 @@ def main(argv: list[str] | None = None) -> None:
             cfg["tts"]["rate"] = args.rate
         text = " ".join(args.words) or "Yo, it's Alfred. What are we getting into today?"
         Speaker(cfg).say(text)
+        return
+    if args.command == "memory":
+        from alfred.memory import HEADER, Memory, memory_path
+
+        cfg = load_config(_find_config(args.config))
+        path = memory_path(cfg)
+        if args.words[:1] == ["edit"]:
+            if not path.exists():
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(HEADER, encoding="utf-8")
+            if sys.platform == "win32":
+                os.startfile(str(path))  # noqa: S606
+            else:
+                import subprocess
+
+                subprocess.run(["open" if sys.platform == "darwin" else "xdg-open", str(path)])
+            return
+        items = Memory(path).items()
+        print(f"Alfred's memory ({len(items)} items) - {path}")
+        for d, t in items:
+            print(f"  - {t}" + (f"   [{d}]" if d else ""))
+        if not items:
+            print("  (empty) - say \"Alfred, remember that ...\"")
+        print("Changes take effect on his next start or after you say \"new chat\".")
         return
     if args.command == "connectors":
         from alfred.connectors import describe_all

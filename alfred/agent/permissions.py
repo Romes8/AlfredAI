@@ -29,6 +29,7 @@ FETCH_TOOLS = {"WebFetch"}
 ALFRED_PREFIX = "mcp__alfred__"
 OPEN_URL = "mcp__alfred__open_url"
 OPEN_APP = "mcp__alfred__open_app"
+MEMORY_TOOLS = {"mcp__alfred__remember", "mcp__alfred__forget"}
 
 DESTRUCTIVE = [
     r"\brm\s+-[a-z]*r", r"\brmdir\b", r"\bdel\s+/[sq]", r"\bformat\s+[a-z]:", r"\bmkfs\b",
@@ -57,6 +58,7 @@ class PermissionPolicy:
         self.auto_open_links = cfg.get("links", {}).get("auto_open", "search_results")
         self.search_urls: set[str] = set()
         self.auto_open_apps = bool(cfg.get("apps", {}).get("auto_open", True))
+        self.confirm_memory = bool(cfg.get("memory", {}).get("confirm", False))
         self.connectors = {c.prefix: c for c in conn_mod.load_connectors(cfg)}
 
     # ---------- path helpers ----------
@@ -104,6 +106,8 @@ class PermissionPolicy:
             if self.auto_open_links == "search_results" and all(_norm_url(u) in self.search_urls for u in urls):
                 return Decision("allow")
             return Decision("ask")
+        if tool in MEMORY_TOOLS:
+            return Decision("ask" if self.confirm_memory else "allow")
         if tool == OPEN_APP:
             # Only installed apps by name, no arguments - low risk, so no tap needed unless apps.auto_open is off.
             return Decision("allow" if self.auto_open_apps else "ask")
@@ -182,6 +186,10 @@ def summarize(tool: str, args: dict[str, Any]) -> tuple[str, str]:
         cmd = str(args.get("command", ""))
         spoken = cmd if len(cmd) <= 120 else cmd[:120] + " and more, check the overlay"
         return f"I want to run this command: {spoken}.", f"RUN\n\n{cmd}"
+    if tool == "mcp__alfred__remember":
+        return f"Want me to remember: {args.get('fact', '')}?", f"REMEMBER\n\n{args.get('fact')}"
+    if tool == "mcp__alfred__forget":
+        return f"Want me to forget {args.get('what', '')}?", f"FORGET\n\n{args.get('what')}"
     if tool == OPEN_APP:
         return f"Want me to open {args.get('name', 'that app')}?", f"OPEN APP\n\n{args.get('name')}"
     if tool == OPEN_URL:

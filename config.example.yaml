@@ -100,6 +100,11 @@ connectors: {}
 #    mode: read_only
 #    deny: [delete_email]                  # per-tool overrides: allow / ask / deny
 
+memory:
+  enabled: true               # long-term memory between sessions: "Alfred, remember that ..."
+  path: null                  # null = memory.md in Alfred's folder (agent.workspace)
+  confirm: false              # true = tap to approve every remember / forget
+
 apps:
   enabled: true               # "Alfred, open Spotify" - installed apps only, no commands
   auto_open: true             # false = he asks first (tap to approve)

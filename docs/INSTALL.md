@@ -122,6 +122,17 @@ alfred text      # type instead of talk
 - **Apps:** "Alfred, open Spotify / Steam / VS Code". Only installed apps (from the Start menu) can be opened,
   never arbitrary commands. Set `apps.auto_open: false` to make him ask first, or `apps.enabled: false` to turn it off.
 
+### Memory (between sessions)
+Alfred keeps long-term notes in **`memory.md`** in his folder (`agent.workspace`, e.g. `Documents\Alfred\memory.md`).
+- "Alfred, remember that Anna's birthday is March 3rd" saves a line. "Alfred, forget Anna's birthday" removes it.
+- "What do you remember about me?" makes him sum up his notes.
+- He also saves lasting preferences you mention (e.g. "I prefer metric"), but never anything he read on a page,
+  in an email, in a file or on screen, and never passwords, keys or card numbers (those are refused).
+- `alfred memory` shows the list. `alfred memory edit` opens the file. It's plain text, so add, fix or delete lines yourself.
+  Changes load on his next start or when you say "new chat".
+- `memory.confirm: true` makes him ask for a tap before every save. `memory.enabled: false` turns memory off.
+- Everything in memory is sent to Claude with every question, so keep it to facts you're happy for him to know.
+
 ### 9. Connectors (optional): HubSpot, email, calendar, ...
 Alfred can use outside services through **MCP servers**, set up per machine in `config.yaml` under `connectors:`.
 Your claude.ai connectors are **not** picked up automatically; Alfred only uses what's listed here.

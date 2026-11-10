@@ -7,6 +7,7 @@ Your voice-first buddy on top of Claude. Ask about **anything you see or want to
 - **Talks while he thinks:** he starts speaking as soon as the first sentence is ready, instead of waiting for the whole answer.
 - **Interrupt him:** hold the key while he's talking and he stops right away and listens.
 - **Connectors:** plug in HubSpot, email, calendar and other services through MCP servers, set up per machine. He reads automatically, and any change needs your tap. See [docs/INSTALL.md](docs/INSTALL.md#9-connectors-optional-hubspot-email-calendar-).
+- **Remembers you:** "Alfred, remember that ..." saves to a plain `memory.md` you can edit (`alfred memory`).
 - **Opens apps:** "Alfred, open Spotify" works with installed apps only, never commands.
 - **Natural free voice:** Kokoro (local, open source). Try voices with `alfred say "hi" --voice am_michael`.
 - **Shows you what he found:** when the page is worth seeing, he opens it in a new Chrome window. Pages from his own search open straight away; other links ask first.
@@ -51,6 +52,7 @@ macOS: `bash scripts/setup_mac.sh` does it all (see the guide for the permission
 | `alfred status` / `alfred logs` | running? / last log lines |
 | `alfred run` / `alfred text` | foreground voice / typed chat |
 | `alfred connectors` | which outside services he can use on this machine |
+| `alfred memory` / `alfred memory edit` | what he remembers / open the file |
 
 ### Games and fullscreen apps
 - Run games in **borderless windowed** mode. Exclusive fullscreen hides every overlay, and some games also block screenshots in that mode.
