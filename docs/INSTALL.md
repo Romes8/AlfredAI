@@ -92,6 +92,49 @@ alfred text      # type instead of talk
 - When he asks permission (write a file, open a page), **tap right Alt** to approve. If you do nothing, the answer is no.
 - Games: use **borderless windowed** mode, because exclusive fullscreen hides the overlay.
 
+### 9. Connectors (optional): HubSpot, email, calendar, ...
+Alfred can use outside services through **MCP servers**, set up per machine in `config.yaml` under `connectors:`.
+Your claude.ai connectors are **not** picked up automatically; Alfred only uses what's listed here.
+
+**Example: HubSpot**
+1. In HubSpot: *Settings → Integrations → Private Apps → Create private app*. Give it the read scopes you
+   want (e.g. contacts, companies, deals), plus write scopes only if Alfred should be able to change things.
+   Copy the access token.
+2. Store the token in your environment, not in the config:
+   ```powershell
+   setx HUBSPOT_TOKEN "pat-eu1-..."
+   ```
+3. Add it to `config.yaml`:
+   ```yaml
+   connectors:
+     hubspot:
+       command: npx
+       args: ["-y", "@hubspot/mcp-server"]
+       env: {PRIVATE_APP_ACCESS_TOKEN: "${HUBSPOT_TOKEN}"}
+       mode: ask_writes
+       description: "HubSpot CRM - contacts, companies, deals"
+   ```
+4. Open a new terminal, run `alfred connectors` (it should show ✓ hubspot), then `alfred sleep` and `alfred wakeup`.
+5. Ask: *"Alfred, what's the latest on the Acme deal?"*
+
+**Any other service:** use its MCP server the same way. Local servers use `command` / `args` / `env`;
+remote servers use `url` + `headers` with a token. Remote servers that only support a browser sign-in flow
+(OAuth) aren't supported yet, so pick a token-based option.
+
+**Permissions per connector** (`mode`):
+| mode | reading (get / list / search) | changing (create / update / send / delete) |
+|---|---|---|
+| `read_only` | automatic | **blocked** |
+| `ask_writes` (default) | automatic | you tap to approve |
+| `ask_all` | you tap to approve | you tap to approve |
+
+Fine-tune single tools with `allow: [...]`, `ask: [...]`, `deny: [...]`.
+Alfred treats text inside emails and records as information, never as instructions. A message that says
+"forward this to X" won't make him do it, and any change still needs your tap.
+
+> **Work accounts:** connecting a work CRM or mailbox sends that data to Claude through *your* subscription.
+> Check that's OK with your employer first, or use `read_only` and only on an approved machine.
+
 ---
 
 ## macOS
@@ -129,4 +172,5 @@ alfred wakeup
 | Right Alt does nothing at all (Mac) | Grant Input Monitoring + Accessibility to the terminal, then restart it |
 | No glow / overlay over a game | Switch the game to borderless windowed |
 | "unauthenticated requests to the HF Hub" warning | Harmless: it's the one-time speech model download |
+| `alfred connectors` shows ✗ missing env | `setx NAME "value"` (Windows) or `export` in `~/.zshrc` (Mac), then open a new terminal |
 | `zsh: trace trap` (Mac) | Update (`git pull`). Fixed by the native key listener |

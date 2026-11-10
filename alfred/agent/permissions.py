@@ -18,6 +18,7 @@ from typing import Any, Awaitable, Callable
 
 from claude_agent_sdk import PermissionResultAllow, PermissionResultDeny, ToolPermissionContext
 
+from alfred import connectors as conn_mod
 from alfred.config import expand
 
 READ_TOOLS = {"Read", "Glob", "Grep"}
@@ -51,6 +52,7 @@ class PermissionPolicy:
         self.workspace = expand(cfg["agent"]["workspace"])
         self.deny_patterns = [s.lower() for s in p["deny_patterns"]]
         self.auto_open_links = bool(cfg.get("links", {}).get("auto_open", False))
+        self.connectors = {c.prefix: c for c in conn_mod.load_connectors(cfg)}
 
     # ---------- path helpers ----------
     @staticmethod
@@ -93,6 +95,12 @@ class PermissionPolicy:
             return Decision("allow" if self.auto_open_links else "ask")
         if tool.startswith(ALFRED_PREFIX):
             return Decision("allow")
+        if tool.startswith("mcp__"):
+            for prefix, c in self.connectors.items():
+                if tool.startswith(prefix):
+                    action, reason = conn_mod.decide(c, tool[len(prefix):])
+                    return Decision(action, reason)
+            return Decision("deny", f"{tool} isn't from a connector enabled on this machine.")
         if tool in WEB_TOOLS:
             return Decision("allow")
         if tool in FETCH_TOOLS:
@@ -154,6 +162,13 @@ def summarize(tool: str, args: dict[str, Any]) -> tuple[str, str]:
         url = str(args.get("url", ""))
         host = re.sub(r"^https?://", "", url).split("/")[0]
         return f"I want to open a page on {host}.", f"FETCH\n\n{url}"
+    if tool.startswith("mcp__") and tool.count("__") >= 2:
+        _, service, short = tool.split("__", 2)
+        import json
+
+        detail = json.dumps(args, indent=2, ensure_ascii=False, default=str)[:1500]
+        action = re.sub(rf"^{re.escape(service)}[_\-.]+", "", short, flags=re.I)  # hubspot-create-x -> create-x
+        return f"I want to {conn_mod.pretty(action)} in {service}.", f"{service.upper()}: {short}\n\n{detail}"
     return f"I want to use {tool}. Yes or no?", f"{tool}\n\n{args}"
 
 

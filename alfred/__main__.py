@@ -6,6 +6,7 @@
   alfred logs       last lines of his log
   alfred run        run in this terminal (foreground, Ctrl+C to stop)
   alfred text       type instead of talk (foreground)
+  alfred connectors which outside services (HubSpot, email, ...) Alfred can use on this machine
 
 `python -m alfred` with no command = `alfred run` (same as before). Old `--text` still works.
 """
@@ -21,7 +22,7 @@ import threading
 from alfred.config import load_config
 from alfred.events import EventBus
 
-COMMANDS = ("wakeup", "sleep", "status", "logs", "run", "text")
+COMMANDS = ("wakeup", "sleep", "status", "logs", "run", "text", "connectors")
 
 
 def _find_config(explicit: str | None) -> str | None:
@@ -75,6 +76,11 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--config", default=None, help="defaults to $ALFRED_CONFIG or config.yaml")
     args = parser.parse_args(argv)
 
+    if args.command == "connectors":
+        from alfred.connectors import describe_all
+
+        print(describe_all(load_config(_find_config(args.config))))
+        return
     if args.command in ("wakeup", "sleep", "status", "logs"):
         from alfred import daemon
 

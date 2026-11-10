@@ -6,6 +6,7 @@ Your voice-first buddy on top of Claude. Ask about **anything you see or want to
 - **Tap mode (optional):** tap the key and just talk. AltGr shortcuts like AltGr+2 for `@` are ignored. Saying "Alfred" works too (optional), and you can say the question in the same breath.
 - **Talks while he thinks:** he starts speaking as soon as the first sentence is ready, instead of waiting for the whole answer.
 - **Interrupt him:** hold the key while he's talking and he stops right away and listens.
+- **Connectors:** plug in HubSpot, email, calendar and other services through MCP servers, set up per machine. He reads automatically, and any change needs your tap. See [docs/INSTALL.md](docs/INSTALL.md#9-connectors-optional-hubspot-email-calendar-).
 - **Opens websites:** "Alfred, open the Colosseum ticket page" opens it in your default browser. He asks first (tap to approve) unless you set `links.auto_open: true`.
 - **Purple edge glow** around every monitor while he's actively listening, so you always know when he's hearing you.
 - **Runs on your Claude subscription** through the Claude Agent SDK, with Haiku by default. Say "think hard" or "research" to switch to Sonnet for that one question.
@@ -45,6 +46,7 @@ macOS: `bash scripts/setup_mac.sh` does it all (see the guide for the permission
 | `alfred sleep` | stop |
 | `alfred status` / `alfred logs` | running? / last log lines |
 | `alfred run` / `alfred text` | foreground voice / typed chat |
+| `alfred connectors` | which outside services he can use on this machine |
 
 ### Games and fullscreen apps
 - Run games in **borderless windowed** mode. Exclusive fullscreen hides every overlay, and some games also block screenshots in that mode.
