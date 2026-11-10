@@ -139,6 +139,7 @@ def test_commands_off_by_default_and_screen_can_be_disabled(cfg):
     cfg["links"]["enabled"] = False
     cfg["apps"]["enabled"] = False
     cfg["memory"]["enabled"] = False
+    cfg["windows"]["enabled"] = False
     assert build_server(cfg) == (None, [])
     assert "CAN'T see his screen" in system_prompt(cfg)
 

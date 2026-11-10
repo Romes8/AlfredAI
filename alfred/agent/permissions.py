@@ -30,6 +30,8 @@ ALFRED_PREFIX = "mcp__alfred__"
 OPEN_URL = "mcp__alfred__open_url"
 OPEN_APP = "mcp__alfred__open_app"
 MEMORY_TOOLS = {"mcp__alfred__remember", "mcp__alfred__forget"}
+RUN_COMMAND = "mcp__alfred__run_command"
+ARRANGE = "mcp__alfred__arrange_window"
 
 DESTRUCTIVE = [
     r"\brm\s+-[a-z]*r", r"\brmdir\b", r"\bdel\s+/[sq]", r"\bformat\s+[a-z]:", r"\bmkfs\b",
@@ -59,6 +61,9 @@ class PermissionPolicy:
         self.search_urls: set[str] = set()
         self.auto_open_apps = bool(cfg.get("apps", {}).get("auto_open", True))
         self.confirm_memory = bool(cfg.get("memory", {}).get("confirm", False))
+        c = cfg.get("commands", {})
+        self.cmd_on = {"sensitive": c.get("on_read_file", "ask"), "change": c.get("on_change", "ask"),
+                       "delete": c.get("on_delete", "ask")}
         self.connectors = {c.prefix: c for c in conn_mod.load_connectors(cfg)}
 
     # ---------- path helpers ----------
@@ -106,6 +111,20 @@ class PermissionPolicy:
             if self.auto_open_links == "search_results" and all(_norm_url(u) in self.search_urls for u in urls):
                 return Decision("allow")
             return Decision("ask")
+        if tool == RUN_COMMAND:
+            from alfred.tools.commands import classify
+
+            level, why = classify(str(args.get("command", "")), self.deny_patterns)
+            if level == "read":
+                return Decision("allow")
+            if level == "blocked":
+                return Decision("deny", f"Blocked - that command {why}. Not running it.")
+            mode = self.cmd_on.get(level, "ask")
+            if mode == "deny":
+                return Decision("deny", f"That command {why}, and this machine is set to never allow that.")
+            return Decision("allow" if mode == "allow" else "ask")
+        if tool == ARRANGE:
+            return Decision("ask" if args.get("action") == "close" else "allow")  # closing can lose unsaved work
         if tool in MEMORY_TOOLS:
             return Decision("ask" if self.confirm_memory else "allow")
         if tool == OPEN_APP:
@@ -186,6 +205,17 @@ def summarize(tool: str, args: dict[str, Any]) -> tuple[str, str]:
         cmd = str(args.get("command", ""))
         spoken = cmd if len(cmd) <= 120 else cmd[:120] + " and more, check the overlay"
         return f"I want to run this command: {spoken}.", f"RUN\n\n{cmd}"
+    if tool == RUN_COMMAND:
+        from alfred.tools.commands import classify
+
+        cmd = str(args.get("command", ""))
+        level, why = classify(cmd)
+        spoken = cmd if len(cmd) <= 100 else cmd[:100] + "... the rest is on the overlay"
+        verb = {"delete": "This one deletes stuff", "change": "This one changes things",
+                "sensitive": "This one reads a file"}.get(level, "")
+        return f"I want to run: {spoken}. {verb}.".replace(". .", "."), f"RUN ({level}: {why})\n\n{cmd}"
+    if tool == ARRANGE:
+        return f"Want me to close {args.get('window', 'that window')}?", f"CLOSE WINDOW\n\n{args.get('window')}"
     if tool == "mcp__alfred__remember":
         return f"Want me to remember: {args.get('fact', '')}?", f"REMEMBER\n\n{args.get('fact')}"
     if tool == "mcp__alfred__forget":

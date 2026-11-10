@@ -105,6 +105,22 @@ memory:
   path: null                  # null = memory.md in Alfred's folder (agent.workspace)
   confirm: false              # true = tap to approve every remember / forget
 
+windows:
+  enabled: true               # "put Chrome on the left half", "move Spotify to monitor 2" (Windows only for now)
+
+# Terminal commands through Alfred's own safety gate (PowerShell on Windows, zsh on Mac).
+#   read-only (git status, dir, ipconfig, Get-Process...) -> runs straight away
+#   reads a file's contents  -> on_read_file      adds/changes/installs/stops -> on_change
+#   deletes/uninstalls       -> on_delete         destructive (format, registry, force push...) -> ALWAYS blocked
+#   each of on_*: ask (tap to approve) | deny (never) | allow (no tap - not recommended)
+commands:
+  enabled: false
+  on_read_file: ask
+  on_change: ask
+  on_delete: ask
+  timeout_s: 60
+  cwd: null                   # default folder to run in (null = Alfred's folder)
+
 apps:
   enabled: true               # "Alfred, open Spotify" - installed apps only, no commands
   auto_open: true             # false = he asks first (tap to approve)

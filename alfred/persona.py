@@ -42,6 +42,16 @@ def system_prompt(cfg: dict | str = "Alfred") -> str:
     writable = ", ".join(perms.get("writable_dirs", [])) or "none"
     lines = [SCREEN_ON if cfg.get("screen", {}).get("enabled", True) else SCREEN_OFF]
     lines.append("- If it needs current info (news, scores, prices, release dates, facts that change), use web search.")
+    import sys as _sys
+
+    if cfg.get("windows", {}).get("enabled", True) and _sys.platform == "win32":
+        lines.append("- You can arrange his windows (arrange_window, list_windows): snap left/right/quarters, maximise, "
+                     "minimise, focus, move to another monitor. Just do it and confirm in a few words.")
+    if cfg.get("commands", {}).get("enabled", False):
+        lines.append("- You can run terminal commands with run_command. Read-only ones run instantly; anything that "
+                     "adds, changes or deletes needs his tap or is blocked - destructive ones never run. Prefer the "
+                     "simplest read-only command, summarise the output in a sentence, never read raw output aloud. "
+                     "If a command gets blocked, say so and suggest what he could run himself.")
     if cfg.get("apps", {}).get("enabled", True):
         lines.append("- You can open apps installed on his computer with open_app (\"open Spotify\", \"start Steam\"). "
                      "Just do it and confirm in a couple of words. If nothing matches, say the closest names.")
